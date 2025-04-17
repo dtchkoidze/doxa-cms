@@ -1,0 +1,30 @@
+1. SQLSTATE[42S22]: Column not found: 1054 Unknown column 'active' in 'where clause'
+select * from `images` where `id` in (6, 7) and `active` = 1
+
+We have no active for images and it will be many of such situation. Solution:
+create cache where info about tables will be placed, including real field information.
+Run utilite like "checker" to rebuild this cache: on main page or in special page.
+
+DONE 2. In feedback we have a custom list method, but it works only with connected records, not with full list.
+
+3. SVG upload to images tables
+
+4. Image drag n drop works only for one (first) image field
+
+5. The same as p.1 for field "position"
+
+6. with_src_table for related (not images) not implemented yet;
+
+DONE 7. Thumbs for images
+
+DONE 8. !!!! checkboxes for related lists
+
+9. sorting by position not updated dinamically
+
+
+
+9. TypeError: this.set.data.variation is undefined on vocabulary@create,  static_page@create, text_block@create
+
+10. "Call to a member function mode() on false" about_us@datagrid
+
+11. Sorting in relation list

@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=fallback');
+
+@import "@fortawesome/fontawesome-free/css/fontawesome.css";
+@import "@fortawesome/fontawesome-free/css/regular.css";
+@import "@fortawesome/fontawesome-free/css/solid.css";
+@import "@fortawesome/fontawesome-free/css/brands.css";
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+
+/* Additional styles */
+@import 'additional-styles/utility-patterns.css';
+@import 'additional-styles/flatpickr.css';
+
+@import 'tailwindcss/utilities';
+
+/* See Alpine.js: https://github.com/alpinejs/alpine#x-cloak */
+[x-cloak=""] {
+    display: none;
+}
+
+@media screen and (max-width: theme('screens.lg')) {
+    [x-cloak="lg"] { display: none; }
+}
+
+@layer components {
+   
+}
+
+.btn-secondary {
+    @apply btn bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 text-gray-800 dark:text-gray-300;
+}
+
+.btn-primary {
+    @apply btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white disabled:opacity-50;
+}
+
+.btn-disabled {
+    @apply btn bg-red-600 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white disabled:border-gray-200 dark:disabled:border-gray-700 disabled:bg-white dark:disabled:bg-gray-800 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed;
+}
+
+.btn-danger {
+    @apply btn bg-red-500 hover:bg-red-600 text-white;
+}
+
+.link {
+    @apply text-violet-500 hover:text-violet-600 dark:hover:text-violet-400;
+}

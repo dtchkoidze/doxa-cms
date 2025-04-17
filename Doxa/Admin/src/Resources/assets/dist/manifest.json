@@ -1,0 +1,109 @@
+{
+  "node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.ttf": {
+    "file": "assets/fa-brands-400-D1LuMI3I.ttf",
+    "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.ttf"
+  },
+  "node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2": {
+    "file": "assets/fa-brands-400-D_cYUPeE.woff2",
+    "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2"
+  },
+  "node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.ttf": {
+    "file": "assets/fa-regular-400-DZaxPHgR.ttf",
+    "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.ttf"
+  },
+  "node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2": {
+    "file": "assets/fa-regular-400-BjRzuEpd.woff2",
+    "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2"
+  },
+  "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf": {
+    "file": "assets/fa-solid-900-D0aA9rwL.ttf",
+    "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf"
+  },
+  "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2": {
+    "file": "assets/fa-solid-900-CTAAxXor.woff2",
+    "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2"
+  },
+  "src/Resources/assets/css/admin.css": {
+    "file": "assets/admin-DfLdtcOa.css",
+    "src": "src/Resources/assets/css/admin.css",
+    "isEntry": true
+  },
+  "src/Resources/assets/images/user-avatar-32.png": {
+    "file": "assets/user-avatar-32-DmcaJ-Cb.png",
+    "src": "src/Resources/assets/images/user-avatar-32.png"
+  },
+  "src/Resources/assets/js/admin.js": {
+    "file": "assets/admin-CiXe99Lt.js",
+    "name": "admin",
+    "src": "src/Resources/assets/js/admin.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/Resources/assets/js/components/configuration/fields/checkbox.vue",
+      "src/Resources/assets/js/components/configuration/fields/datetime.vue",
+      "src/Resources/assets/js/components/configuration/fields/img.vue",
+      "src/Resources/assets/js/components/configuration/fields/input.vue",
+      "src/Resources/assets/js/components/configuration/fields/textarea.vue",
+      "src/Resources/assets/js/components/configuration/fields/tiny.vue"
+    ],
+    "css": [
+      "assets/admin-DYqlk01w.css"
+    ],
+    "assets": [
+      "assets/user-avatar-32-DmcaJ-Cb.png"
+    ]
+  },
+  "src/Resources/assets/js/components/configuration/fields/checkbox.vue": {
+    "file": "assets/checkbox-Cdtt40Hf.js",
+    "name": "checkbox",
+    "src": "src/Resources/assets/js/components/configuration/fields/checkbox.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/Resources/assets/js/admin.js"
+    ]
+  },
+  "src/Resources/assets/js/components/configuration/fields/datetime.vue": {
+    "file": "assets/datetime-DQgzZLhP.js",
+    "name": "datetime",
+    "src": "src/Resources/assets/js/components/configuration/fields/datetime.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/Resources/assets/js/admin.js"
+    ]
+  },
+  "src/Resources/assets/js/components/configuration/fields/img.vue": {
+    "file": "assets/img-BWNhmhZp.js",
+    "name": "img",
+    "src": "src/Resources/assets/js/components/configuration/fields/img.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/Resources/assets/js/admin.js"
+    ]
+  },
+  "src/Resources/assets/js/components/configuration/fields/input.vue": {
+    "file": "assets/input-DkW63aOK.js",
+    "name": "input",
+    "src": "src/Resources/assets/js/components/configuration/fields/input.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/Resources/assets/js/admin.js"
+    ]
+  },
+  "src/Resources/assets/js/components/configuration/fields/textarea.vue": {
+    "file": "assets/textarea-PNO8Ubek.js",
+    "name": "textarea",
+    "src": "src/Resources/assets/js/components/configuration/fields/textarea.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/Resources/assets/js/admin.js"
+    ]
+  },
+  "src/Resources/assets/js/components/configuration/fields/tiny.vue": {
+    "file": "assets/tiny-CNgAsXCG.js",
+    "name": "tiny",
+    "src": "src/Resources/assets/js/components/configuration/fields/tiny.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/Resources/assets/js/admin.js"
+    ]
+  }
+}
