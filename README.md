@@ -70,7 +70,7 @@ npm run dev-all
 
 ### 8. Access the Admin Panel
 
-You're all set! You can now access the admin panel by navigating to `/admin` in your browser.
+You're all set! You can now access the admin panel by navigating to `yourwebsite.loc/admin` in your browser.
 
 ## Development
 
