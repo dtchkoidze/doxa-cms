@@ -19,7 +19,7 @@ git clone https://github.com/dtchkoidze/doxa-cms.git
 Navigate to the cloned directory and install all required dependencies:
 
 ```bash
-cd pdox
+cd doxa-cms
 npm i-all
 ```
 
@@ -31,7 +31,7 @@ In your consumer project (the one that will use this package), add the following
 "repositories": [
   {
     "type": "path",
-    "url": "/absolute/path/to/pdox",
+    "url": "/absolute/path/to/doxa-cms",
     "options": {
       "symlink": true
     }
