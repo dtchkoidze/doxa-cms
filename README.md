@@ -20,7 +20,7 @@ Navigate to the cloned directory and install all required dependencies:
 
 ```bash
 cd doxa-cms
-npm i-all
+npm run i-all
 ```
 
 ### 3. Configure Your Consumer Project

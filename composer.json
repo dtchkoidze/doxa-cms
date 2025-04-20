@@ -32,6 +32,10 @@
 	},
 	"authors": [
 		{
+			"name": "geperson",
+			"email": "mail@geperson.com"
+		},
+		{
 			"name": "dtchkoidze",
 			"email": "dtchkoiddze@gmail.com"
 		}
@@ -39,7 +43,7 @@
 	"extra": {
 		"laravel": {
 			"providers": [
-                "Doxa\\Core\\Providers\\ModulesServiceProvider",
+				"Doxa\\Core\\Providers\\ModulesServiceProvider",
 				"Doxa\\User\\Providers\\UserServiceProvider",
 				"Doxa\\Admin\\Providers\\AdminServiceProvider",
 				"Doxa\\Core\\Providers\\ProjectsServiceProvider"

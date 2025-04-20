@@ -15,7 +15,8 @@
 		"dev-user": "cd Doxa/User && npm run dev",
 		"dev-socket-srv": "cd Doxa/socket-srv && npm run dev",
 		"build-admin": "cd Doxa/Admin && npm run build",
-		"build-user": "cd Doxa/User && npm run build"
+		"build-user": "cd Doxa/User && npm run build",
+		"i-all": "npm install && concurrently \"cd Doxa/Admin && npm install\" \"cd Doxa/User && npm install\" \"cd Doxa/socket-srv && npm install\""
 	},
 	"author": "",
 	"license": "ISC",
