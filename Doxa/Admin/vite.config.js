@@ -5,15 +5,17 @@ import vueDevTools from "vite-plugin-vue-devtools";
 import path from "path";
 
 export default defineConfig(({ mode }) => {
-	const envDir = "../../";
-	let p = path.resolve(envDir);
-	Object.assign(process.env, loadEnv(mode, p));
-	let consumerRoot = process.env.VITE_CONSUMER_PROJECT_PATH;
-	if (!consumerRoot) {
-		throw new Error(
-			"VITE_CONSUMER_PROJECT_PATH environment variable is not set."
-		);
-	}
+	const pkgEnvDir = path.resolve("../../");
+	const pkgEnv = loadEnv(mode, pkgEnvDir);
+
+	const consumerRoot = pkgEnv?.VITE_CONSUMER_PROJECT_PATH;
+
+	const rootEnvDir =
+		pkgEnv?.VITE_PKG_MODE == "local" ? consumerRoot : "../../../";
+
+	const rootEnv = loadEnv(mode, rootEnvDir);
+	Object.assign(process.env, rootEnv, pkgEnv);
+
 	return {
 		base: "/doxa/admin/",
 		build: {
@@ -24,14 +26,17 @@ export default defineConfig(({ mode }) => {
 				transformMixedEsModules: true,
 			},
 		},
-		envDir,
+		rootEnv,
+		pkgEnv,
 		plugins: [
 			vue(),
 			vueDevTools({
 				appendTo: "admin.js",
 			}),
 			laravel({
-				hotFile: consumerRoot ? consumerRoot + "/public/doxa-admin-vite.hot" : false,
+				hotFile: consumerRoot
+					? consumerRoot + "/public/doxa-admin-vite.hot"
+					: false,
 				publicDirectory: "./src/Resources/assets/dist",
 				input: [
 					"./src/Resources/assets/js/admin.js",

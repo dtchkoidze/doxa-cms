@@ -1,12 +1,28 @@
 {
-  "name": "doxa-cms",
-  "version": "1.0.0",
-  "main": "vite.config.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "vite build"
-  },
-  "author": "",
-  "license": "ISC",
-  "description": ""
+	"name": "doxa-cms",
+	"version": "1.0.0",
+	"main": "vite.config.js",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"dev-all:windows": "concurrently \"npm run dev-admin\" \"npm run dev-user\" \"npm run dev-socket-srv\"",
+		"dev-all:unix": "concurrently \"npm run dev-admin\" \"npm run dev-user\" \"npm run dev-socket-srv\"",
+		"dev-all": "node -e \"process.platform === 'win32' ? require('child_process').execSync('npm run dev-all:windows', {stdio: 'inherit'}) : require('child_process').execSync('npm run dev-all:unix', {stdio: 'inherit'})\"",
+		"build-all:windows": "concurrently \"npm run build-admin\" \"npm run build-user\"",
+		"build-all:unix": "concurrently \"npm run build-admin\" \"npm run build-user\" ",
+		"build-all": "node -e \"process.platform === 'win32' ? require('child_process').execSync('npm run build-all:windows', {stdio: 'inherit'}) : require('child_process').execSync('npm run build-all:unix', {stdio: 'inherit'})\"",
+		"dev-admin": "cd Doxa/Admin && npm run dev",
+		"dev-user": "cd Doxa/User && npm run dev",
+		"dev-socket-srv": "cd Doxa/socket-srv && npm run dev",
+		"build-admin": "cd Doxa/Admin && npm run build",
+		"build-user": "cd Doxa/User && npm run build"
+	},
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"concurrently": "^9.1.2",
+		"dotenv-cli": "^8.0.0",
+		"cross-env": "^7.0.3"
+	}
 }

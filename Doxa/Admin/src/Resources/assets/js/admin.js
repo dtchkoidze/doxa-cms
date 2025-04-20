@@ -22,23 +22,25 @@ import { color_log } from "./tools/logger";
 window.clog = color_log;
 
 const app = createApp({
-    components: {
-        Banner,
-        HeaderVue,
-        TreeView,
-        Acl,
-        Sidebar,
-        Omni,
-        Configuration,
-    },
-    data() {
-        return {};
-    },
-    methods: {},
-    mounted() {
-        // socket.emit("testing", { data: "testing_data" });
-        //console.log("test admin.js  mounted vue vrum vruuum");
-    },
+	components: {
+		Banner,
+		HeaderVue,
+		TreeView,
+		Acl,
+		Sidebar,
+		Omni,
+		Configuration,
+	},
+	data() {
+		return {};
+	},
+	methods: {},
+	mounted() {
+		// socket.emit("testing", { data: "testing_data" });
+		//console.log("test admin.js  mounted vue vrum vruuum");
+		// Check if pkg reads both consumer and local env variables
+		console.log(import.meta.env);
+	},
 });
 
 [Emitter].forEach((plugin) => app.use(plugin));

@@ -2,10 +2,19 @@ import { defineConfig, loadEnv } from "vite";
 import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
+import path from "path";
 
 export default defineConfig(({ mode }) => {
-	const envDir = "../../../";
-	Object.assign(process.env, loadEnv(mode, envDir));
+	const pkgEnvDir = path.resolve("../../");
+	const pkgEnv = loadEnv(mode, pkgEnvDir);
+
+	const consumerRoot = pkgEnv?.VITE_CONSUMER_PROJECT_PATH;
+
+	const rootEnvDir =
+		pkgEnv?.VITE_PKG_MODE == "local" ? consumerRoot : "../../../";
+
+	const rootEnv = loadEnv(mode, rootEnvDir);
+	Object.assign(process.env, rootEnv, pkgEnv);
 
 	return {
 		base: "/doxa/user/",
@@ -17,14 +26,17 @@ export default defineConfig(({ mode }) => {
 				transformMixedEsModules: true,
 			},
 		},
-		envDir,
+		rootEnv,
+		pkgEnv,
 		plugins: [
 			vue(),
 			vueDevTools({
 				appendTo: "user.js",
 			}),
 			laravel({
-				hotFile: "../../../public/doxa-user-vite.hot",
+				hotFile: consumerRoot
+					? consumerRoot + "/public/doxa-user-vite.hot"
+					: false,
 				publicDirectory: "./src/Resources/assets/dist",
 				input: [
 					"./src/Resources/assets/js/user.js",
