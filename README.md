@@ -11,7 +11,7 @@ Doxa CMS provides a complete admin interface solution with user authentication a
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/dtchkoidze/pdox.git
+git clone https://github.com/dtchkoidze/doxa-cms.git
 ```
 
 ### 2. Install Dependencies
