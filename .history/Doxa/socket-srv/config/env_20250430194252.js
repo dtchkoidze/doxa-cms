@@ -7,6 +7,6 @@ config({ path: path.resolve("../../.env") });
 let envDir = process.env.VITE_CONSUMER_PROJECT_PATH;
 console.log("envDir is: ", envDir);
 
-config({ path: resolve(envDir, ".env") });
+config({ path: resolve("../../../.env") });
 
 export default process.env;

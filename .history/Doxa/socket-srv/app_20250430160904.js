@@ -36,9 +36,6 @@ io.on("connection", (socket) => {
 
 const PORT = env.WEBSOCKET_PORT || 3000;
 console.log(PORT);
-let processRoot = process.cwd();
-
-console.log("processRoot: ", processRoot);
 server.listen(PORT, (req, res) => {
     console.log("request: ", req);
     console.log(`Server is running on port ${PORT}`);

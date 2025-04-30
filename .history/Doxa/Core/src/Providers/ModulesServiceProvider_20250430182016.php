@@ -76,8 +76,6 @@ class ModulesServiceProvider extends ServiceProvider
             }
         }
 
-        //dump($project_config);
-
         $core_config_src = include $this->core_modules_config_path;
         foreach ($core_config_src as $key => $val) {
             if (is_numeric($key)) {
@@ -87,7 +85,6 @@ class ModulesServiceProvider extends ServiceProvider
             }
         }
 
-        //dd($core_config);
 
         if (empty($project_config)) {
             $modules_config = $core_config;
@@ -102,7 +99,7 @@ class ModulesServiceProvider extends ServiceProvider
             }
         }
 
-        //dd($modules_config);
+        //  dd($modules_config);
 
         // END -- MODULES CONFIGURATION
 
@@ -116,7 +113,7 @@ class ModulesServiceProvider extends ServiceProvider
             $this->configure();
         }
 
-        //dd(Config::get('doxa.modules'));
+        // dd(Config::get('doxa.modules'));
     }
 
     /**
@@ -160,7 +157,7 @@ class ModulesServiceProvider extends ServiceProvider
         $this->dir_name = $repository_class_name = (empty($this->settings['dir_name'])) ? snakeToCamel($this->module, $firstToUppercase = true) : $this->settings['dir_name'];
 
         $path_to_doxa_module_folder    = Doxa::path_to_doxa_modules() . $this->dir_name;
-        $path_to_project_module_folder = base_path( 'app/Modules/' . $this->dir_name);
+        $path_to_project_module_folder = base_path($this->project_folder . '/Modules/' . $this->dir_name);
 
         $path_to_doxa_config    = $path_to_doxa_module_folder . '/config.php';
         $path_to_project_config = $path_to_project_module_folder . '/config.php';
@@ -213,7 +210,7 @@ class ModulesServiceProvider extends ServiceProvider
                 'dir_path' => $path_to_project_module_folder,
                 'repository_path' => $path_to_project_module_folder . "/Repositories/" . $repository_class_name . '.php',
                 'repository_class' =>  $repository_class_name,
-                'class' => "App\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
+                'class' => "\\Projects\\" . config('app.project_name') . "\\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
                 'class_name' => $repository_class_name
             ];
         } else {

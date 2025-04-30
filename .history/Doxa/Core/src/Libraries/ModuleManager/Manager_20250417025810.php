@@ -19,7 +19,7 @@ class Manager
 
     protected static self|null $instance = null;
 
-    public ?string $module = '';
+    public string $module = '';
 
     protected object $config;
 

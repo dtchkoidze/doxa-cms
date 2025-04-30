@@ -278,12 +278,17 @@ trait Saving
                         DB::table($this->variations_table)->insertGetId($set);
                     }
 
+                    //dump('$this->scheme->isVariationHasUpdatedAt(): ',$this->scheme->isVariationHasUpdatedAt());
+
                     if ($this->scheme->isVariationHasUpdatedAt() && $existing_variation){
 
                         $after_save = $this->getVariation($channel_id, $locale_id);
                         $before_save = $existing_variation;
 
+                        //dump((array)$after_save !== (array)$before_save);
+
                         if((array)$after_save !== (array)$before_save) {
+                            
                             $_set = [
                                 'updated_at' => date('Y-m-d H:i:s'),
                                 //'admin_id' => auth()->guard('admin')->user()->id

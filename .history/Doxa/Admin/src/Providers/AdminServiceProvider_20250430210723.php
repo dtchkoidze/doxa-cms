@@ -49,6 +49,8 @@ class AdminServiceProvider extends ServiceProvider
      */
     public function boot(Router $router)
     {
+
+
         $this->app->booted(function() {
             $schedule = $this->app->make(Schedule::class);
 

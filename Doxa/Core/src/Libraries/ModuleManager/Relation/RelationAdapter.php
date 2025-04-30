@@ -19,19 +19,19 @@ class RelationAdapter
      * @return WithConnect|WithoutConnect|WithSrcTable
      */
     
-    static public function getHandler($relation, $package)
+    static public function getHandler($relation, $package, $request_config = null)
     {
         switch($relation->mode()){
             case Relation::MODE_WITH_CONNECT_TABLE:
-                return new WithConnect($relation, $package);
+                return new WithConnect($relation, $package, $request_config);
             case Relation::MODE_WITH_CUSTOM_CONNECT_TABLE:
-                return new WithConnect($relation, $package);
+                return new WithConnect($relation, $package, $request_config);
             case Relation::MODE_WITHOUT_CONNECT_TABLE:
-                return new WithoutConnect($relation, $package);
+                return new WithoutConnect($relation, $package, $request_config);
             case Relation::MODE_WITH_SRC_TABLE:
-                return new WithSrcTable($relation, $package);   
+                return new WithSrcTable($relation, $package, $request_config);   
             default:
-                return new WithConnect($relation, $package);
+                return new WithConnect($relation, $package, $request_config);
         }
     }
 }

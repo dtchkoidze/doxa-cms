@@ -285,12 +285,12 @@ class RelationBase
 
         // create files
         if(!Storage::exists($new_path)){
-            ///dump('!Storage::exists($new_path): ', $new_path);
+            dump('!Storage::exists($new_path): ', $new_path);
             Storage::copy($temp_path, $new_path);
-            //dd('copied');
+            dd('copied');
         }
 
-        //dd(1);
+        dd(1);
 
         if($ext == 'webp'){
             //$thumb_path = $this->getImageThumbDirectory($this->relation->srcTable()) . '/' . $folder . '/' . $hash . '.'.$ext;

@@ -51,20 +51,59 @@ class WithoutConnect extends RelationBase
         ]);
         //---------------
 
-        // OLD, see NEW
+        // if(!empty($this->request_config)){
+        //     dd($this->request_config);
+        // } else {
+        //     dd('no dd($this->request_config);');
+        // }
+        
+
+        
         if($this->related_records){
-            foreach($this->records as $record){
-                if(empty($record->{$this->key})){
-                    $record->{$this->key} = [];
-                } else {
-                    $a = [];
-                    foreach($record->{$this->key} as $identificator){
-                        //dump($identificator);
-                        if(isset($this->related_records[$identificator])){
-                            $a[] = $this->related_records[$identificator];
-                        }
-                    };
-                    $record->{$this->key} = $a;
+
+            // I add ->config('omni) to get 
+
+            // OLD, see NEW
+            if(!empty($this->request_config['single_related_as_array'])){
+                foreach($this->records as $record){
+                    if(empty($record->{$this->key})){
+                        $record->{$this->key} = [];
+                    } else {
+                        $a = [];
+                        foreach($record->{$this->key} as $identificator){
+                            //dump($identificator);
+                            if(isset($this->related_records[$identificator])){
+                                $a[] = $this->related_records[$identificator];
+                            }
+                        };
+                        $record->{$this->key} = $a;
+                    }
+                }
+            } else {
+                // NEW, we believe withoutConnect includes only 1 related record
+                // 26.02.2025 Why I returned to this? Most of relations are on to one, so we need to return ONE record relation and not array,
+                // example: message status, if we return an array we always must get related as $message->status[0]->name. It's not a good idea.
+                // better to return $message->status->name. By reson I don't remember I had to return to old method: return related as array.
+                // And then swithc to this again, cause a huge code use related without array like $message->status->name.
+                // When next time we'll face this problem, we must find a solution to return related as array or as object of single record by situation.
+                // 17.04.2025
+                // !!!!!!! I face to a problem in Admin
+                foreach($this->records as $record){
+                    if(empty(($record->{$this->key}))){
+                        $record->{$this->key} = '';
+                    } else {
+                        //dump($record->{$this->key});
+                        foreach($record->{$this->key} as $identificator){
+                            //dd($identificator);
+                            if(isset($this->related_records[$identificator])){
+                                //dump($identificator, $this->related_records[$identificator]);
+                                $record->{$this->key} = $this->related_records[$identificator];
+                            } else {
+                                $record->{$this->key} = [];
+                            }
+                        };
+                    }
+                    
                 }
             }
         }
@@ -75,6 +114,8 @@ class WithoutConnect extends RelationBase
         // better to return $message->status->name. By reson I don't remember I had to return to old method: return related as array.
         // And then swithc to this again, cause a huge code use related without array like $message->status->name.
         // When next time we'll face this problem, we must find a solution to return related as array or as object of single record by situation.
+        // 17.04.2025
+        // !!!!!!! I face to a problem in Admin
         // if($this->related_records){
         //     //dump('$this->related_records', $this->related_records);
         //     foreach($this->records as $record){

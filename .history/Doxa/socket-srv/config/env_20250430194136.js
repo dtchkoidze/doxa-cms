@@ -2,10 +2,10 @@ import { config } from "dotenv";
 import { resolve } from "path";
 import path from "path";
 
-config({ path: path.resolve("../../.env") });
+let pkgEnv = path.resolve("../../.env");
+pkgEnv = config({ path: pkgEnv });
+let envDir = pkgEnv.VITE_CONSUMER_PROJECT_PATH;
 
-let envDir = process.env.VITE_CONSUMER_PROJECT_PATH;
-console.log("envDir is: ", envDir);
 
 config({ path: resolve(envDir, ".env") });
 

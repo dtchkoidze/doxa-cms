@@ -4,10 +4,7 @@ namespace Doxa\Admin\Providers;
 
 use Override;
 use Illuminate\Routing\Router;
-use Doxa\Core\Cron\LogsCleanup;
 use Illuminate\Support\Facades\DB;
-use Doxa\User\Cron\ProfilesCleanup;
-use Doxa\User\Cron\NotConfirmedUsers;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Config;
@@ -16,7 +13,6 @@ use Doxa\Admin\Http\Middleware\SuperUser;
 use Illuminate\Database\Events\QueryExecuted;
 use Projects\Dusty\Attributes\OverrideModules;
 use Doxa\Admin\Http\Controllers\OmniController;
-use Illuminate\Console\Scheduling\Schedule;
 use Doxa\Admin\Libraries\DBModule\DBModuleManager;
 use Doxa\Admin\Libraries\Configuration\Configuration;
 use Doxa\Admin\Http\Middleware\Admin as AdminMiddleware;
@@ -49,6 +45,8 @@ class AdminServiceProvider extends ServiceProvider
      */
     public function boot(Router $router)
     {
+
+
         $this->app->booted(function() {
             $schedule = $this->app->make(Schedule::class);
 

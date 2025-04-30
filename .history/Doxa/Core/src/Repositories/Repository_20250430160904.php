@@ -21,14 +21,9 @@ class Repository
 
     protected $table;
 
-    protected $module = null;
-
     protected ?Package $package = null;
 
-    public function __construct($package = null) 
-    {
-        //dd($package, $this->module);
-
+    public function __construct($package = null) {
         if(!$package && !$this->module){
             die(get_called_class() . ' - not package nor module not provided');
             

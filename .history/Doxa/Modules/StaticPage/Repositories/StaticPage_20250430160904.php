@@ -9,8 +9,6 @@ use Doxa\Core\Repositories\Repository;
 
 class StaticPage extends Repository
 {
-    protected $module = 'static_page';
-
     public function getUrlKeys()
     {
         $keys = Cache::rememberForever('static_page_url_keys', function () {

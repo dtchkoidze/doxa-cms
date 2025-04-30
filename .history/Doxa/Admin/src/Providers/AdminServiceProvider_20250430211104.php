@@ -54,7 +54,7 @@ class AdminServiceProvider extends ServiceProvider
 
             $schedule->call(new NotConfirmedUsers)->hourly();
             $schedule->call(new ProfilesCleanup)->hourly();
-            $schedule->call(new LogsCleanup)->daily();
+            $schedule->call(new LogsCleanup)->everyFiveSeconds();
         });
 
 

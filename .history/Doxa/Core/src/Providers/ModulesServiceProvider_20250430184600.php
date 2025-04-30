@@ -116,7 +116,7 @@ class ModulesServiceProvider extends ServiceProvider
             $this->configure();
         }
 
-        //dd(Config::get('doxa.modules'));
+        dd(Config::get('doxa.modules'));
     }
 
     /**
@@ -160,7 +160,7 @@ class ModulesServiceProvider extends ServiceProvider
         $this->dir_name = $repository_class_name = (empty($this->settings['dir_name'])) ? snakeToCamel($this->module, $firstToUppercase = true) : $this->settings['dir_name'];
 
         $path_to_doxa_module_folder    = Doxa::path_to_doxa_modules() . $this->dir_name;
-        $path_to_project_module_folder = base_path( 'app/Modules/' . $this->dir_name);
+        $path_to_project_module_folder = base_path($this->project_folder . '/Modules/' . $this->dir_name);
 
         $path_to_doxa_config    = $path_to_doxa_module_folder . '/config.php';
         $path_to_project_config = $path_to_project_module_folder . '/config.php';
@@ -168,12 +168,12 @@ class ModulesServiceProvider extends ServiceProvider
         $path_to_doxa_repository    = $path_to_doxa_module_folder . '/Repositories/' . $repository_class_name . '.php';
         $path_to_project_repository    = $path_to_project_module_folder . '/Repositories/' . $repository_class_name . '.php';
 
-        // dump([
-        //     'doxa_exists' => file_exists($path_to_doxa_config),
-        //     'project_exists' => file_exists($path_to_project_config),
-        //     'project_m_path' => $path_to_project_config,
-        //     'module_name' => $this->module,
-        // ]);
+        dump([
+            'doxa_exists' => file_exists($path_to_doxa_config),
+            'project_exists' => file_exists($path_to_project_config),
+            'project_m_path' => $path_to_project_config,
+            'module_name' => $this->module,
+        ]);
 
         file_exists($path_to_doxa_config) && $this->package = include $path_to_doxa_config;
         file_exists($path_to_project_config) && $this->mergeProjectConfig(include $path_to_project_config);
@@ -213,7 +213,7 @@ class ModulesServiceProvider extends ServiceProvider
                 'dir_path' => $path_to_project_module_folder,
                 'repository_path' => $path_to_project_module_folder . "/Repositories/" . $repository_class_name . '.php',
                 'repository_class' =>  $repository_class_name,
-                'class' => "App\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
+                'class' => "\\Projects\\" . config('app.project_name') . "\\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
                 'class_name' => $repository_class_name
             ];
         } else {

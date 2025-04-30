@@ -281,17 +281,13 @@ class RelationBase
         $folder = substr($hash, 0, 1);
         $new_path = $this->getImagesDirectory($this->relation->srcTable()) . '/' . $folder . '/' . $hash . '.'.$ext;
 
-        //dd($new_path);
+        dd($new_path);
 
         // create files
         if(!Storage::exists($new_path)){
-            ///dump('!Storage::exists($new_path): ', $new_path);
+            //dump('!Storage::exists($new_path): ', $new_path);
             Storage::copy($temp_path, $new_path);
-            //dd('copied');
         }
-
-        //dd(1);
-
         if($ext == 'webp'){
             //$thumb_path = $this->getImageThumbDirectory($this->relation->srcTable()) . '/' . $folder . '/' . $hash . '.'.$ext;
             $this->makeThumb($temp_path, $hash);

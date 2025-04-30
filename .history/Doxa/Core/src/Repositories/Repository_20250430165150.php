@@ -21,13 +21,13 @@ class Repository
 
     protected $table;
 
-    protected $module = null;
+    protected $module = '';
 
     protected ?Package $package = null;
 
     public function __construct($package = null) 
     {
-        //dd($package, $this->module);
+        dd($package, $this->module);
 
         if(!$package && !$this->module){
             die(get_called_class() . ' - not package nor module not provided');

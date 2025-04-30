@@ -44,39 +44,23 @@ class ModulesServiceProvider extends ServiceProvider
         $this->getPathes();
 
         if (!file_exists($this->core_modules_config_path)) {
-            dd('File ' . $this->core_modules_config_path . ' not found');
-        } else {
-            //dd('OK ' . $this->core_modules_config_path);
+           // dd('File ' . $this->core_modules_config_path . ' not found');
         }
 
-        //dd(config('doxa_modules'));
 
         $project_config = $core_config = [];
-        // if (file_exists($this->project_modules_config_path)) {
-        //     $project_config_src = include $this->project_modules_config_path;
-        //     dd($project_config_src);
-        //     if (!empty($project_config_src)) {
-        //         foreach ($project_config_src as $key => $val) {
-        //             if (is_numeric($key)) {
-        //                 $project_config[$val] = [];
-        //             } else {
-        //                 $project_config[$key] = $val;
-        //             }
-        //         }
-        //     }
-        // } else {
-        //     //dd('!file_exists(' . $this->project_modules_config_path . ')');
-        // }
-
-        foreach(config('doxa_modules') as $key => $val) {
-            if (is_numeric($key)) {
-                $project_config[$val] = [];
-            } else {
-                $project_config[$key] = $val;
+        if (file_exists($this->project_modules_config_path)) {
+            $project_config_src = include $this->project_modules_config_path;
+            if (!empty($project_config_src)) {
+                foreach ($project_config_src as $key => $val) {
+                    if (is_numeric($key)) {
+                        $project_config[$val] = [];
+                    } else {
+                        $project_config[$key] = $val;
+                    }
+                }
             }
         }
-
-        //dump($project_config);
 
         $core_config_src = include $this->core_modules_config_path;
         foreach ($core_config_src as $key => $val) {
@@ -87,7 +71,6 @@ class ModulesServiceProvider extends ServiceProvider
             }
         }
 
-        //dd($core_config);
 
         if (empty($project_config)) {
             $modules_config = $core_config;
@@ -102,7 +85,7 @@ class ModulesServiceProvider extends ServiceProvider
             }
         }
 
-        //dd($modules_config);
+        //  dd($modules_config);
 
         // END -- MODULES CONFIGURATION
 
@@ -116,7 +99,7 @@ class ModulesServiceProvider extends ServiceProvider
             $this->configure();
         }
 
-        //dd(Config::get('doxa.modules'));
+        // dd(Config::get('doxa.modules'));
     }
 
     /**
@@ -160,7 +143,7 @@ class ModulesServiceProvider extends ServiceProvider
         $this->dir_name = $repository_class_name = (empty($this->settings['dir_name'])) ? snakeToCamel($this->module, $firstToUppercase = true) : $this->settings['dir_name'];
 
         $path_to_doxa_module_folder    = Doxa::path_to_doxa_modules() . $this->dir_name;
-        $path_to_project_module_folder = base_path( 'app/Modules/' . $this->dir_name);
+        $path_to_project_module_folder = base_path($this->project_folder . '/Modules/' . $this->dir_name);
 
         $path_to_doxa_config    = $path_to_doxa_module_folder . '/config.php';
         $path_to_project_config = $path_to_project_module_folder . '/config.php';
@@ -180,12 +163,12 @@ class ModulesServiceProvider extends ServiceProvider
 
 
         if(!file_exists($path_to_doxa_config) && !file_exists($path_to_project_config)) {
-            //dd($path_to_doxa_config);
-            dd($this->module .  'not found');
+           // dd($path_to_doxa_config);
+           // dd($this->module .  'not found');
         }
 
         if (empty($this->package)) {
-            dd($this->module . 'failed');
+           // dd($this->module . 'failed');
             return false;
         }
 
@@ -213,7 +196,7 @@ class ModulesServiceProvider extends ServiceProvider
                 'dir_path' => $path_to_project_module_folder,
                 'repository_path' => $path_to_project_module_folder . "/Repositories/" . $repository_class_name . '.php',
                 'repository_class' =>  $repository_class_name,
-                'class' => "App\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
+                'class' => "\\Projects\\" . config('app.project_name') . "\\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
                 'class_name' => $repository_class_name
             ];
         } else {
@@ -237,19 +220,12 @@ class ModulesServiceProvider extends ServiceProvider
 
     private function getPathes()
     {
-        //this->project_folder = 'packages/Projects/' . config('app.project_name') . '/src';
         $this->project_folder = 'packages/Projects/' . config('app.project_name') . '/src';
-
-
         $dir = dirname(__DIR__, 2);
         $path = $dir . '/src/Config/modules.php';
         $this->doxa_folder = $dir . '/src';
-
-        //$this->project_modules_config_path = base_path($this->project_folder . '/Config/modules.php');
-        $this->project_modules_config_path = base_path('config\modules.php');
-
+        $this->project_modules_config_path = base_path($this->project_folder . '/Config/modules.php');
         $this->core_modules_config_path = $path;
-        
 
         // dd([
         //     'project_folder' => $this->project_folder,

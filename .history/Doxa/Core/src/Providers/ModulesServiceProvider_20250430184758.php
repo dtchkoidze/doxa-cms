@@ -213,7 +213,7 @@ class ModulesServiceProvider extends ServiceProvider
                 'dir_path' => $path_to_project_module_folder,
                 'repository_path' => $path_to_project_module_folder . "/Repositories/" . $repository_class_name . '.php',
                 'repository_class' =>  $repository_class_name,
-                'class' => "App\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
+                'class' => "\\Projects\\" . config('app.project_name') . "\\Modules\\" . $this->dir_name . "\\Repositories\\" . $repository_class_name,
                 'class_name' => $repository_class_name
             ];
         } else {
