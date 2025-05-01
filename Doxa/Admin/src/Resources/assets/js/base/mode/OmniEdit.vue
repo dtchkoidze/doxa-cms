@@ -57,7 +57,6 @@ export default {
     created() {
         axios.get('/admin/'+this.module+'/get_item_set/'+this.id, {params: {method: this.method}})
             .then(response => {
-                console.log("res: ", response);
                 if(!response.data.success){
                     this.error = response.data.notification.message;
                     return;
@@ -73,7 +72,7 @@ export default {
                 this.setCurrentChannelAndLocale();
 
                 this.csrf_token = this.set.csrf_token;
-                console.log("csrf_token: ", this.csrf_token);
+
                 this.structure[this.getStructureKey()] = this.set;
             })
             .catch((error) => {

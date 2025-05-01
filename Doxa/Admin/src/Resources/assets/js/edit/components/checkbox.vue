@@ -23,7 +23,7 @@ export default {
         this.$parent.updateData(this.value ? 1 : 0);
     },
     mounted() {
-        console.log("This parent: ", this.$parent);
+
     }
 };
 </script>

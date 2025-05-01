@@ -82,7 +82,7 @@ export default {
                     console.log(error);
                 });
 
-            clog('this user:', this.user);
+            //clog('this user:', this.user);
         },
         handleRoleChange(event) {
             //console.log('event:', event.target.value);

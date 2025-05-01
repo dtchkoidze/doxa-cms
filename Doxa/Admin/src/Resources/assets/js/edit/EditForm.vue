@@ -144,7 +144,6 @@ export default {
     mounted() {
         document.addEventListener("keydown", this.submitOnCtrlEnter);
         this.initial_set = JSON.parse(JSON.stringify(this.set));
-        console.log(this.method);
     },
 
     unmounted() {
@@ -197,8 +196,6 @@ export default {
             const config = {
                 headers: { "Content-Type": "multipart/form-data" },
             };
-
-            console.log('this.method: ',this.method);
 
             let url;
             switch (this.method) {
