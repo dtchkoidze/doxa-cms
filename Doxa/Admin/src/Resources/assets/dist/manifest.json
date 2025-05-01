@@ -33,7 +33,7 @@
     "src": "src/Resources/assets/images/user-avatar-32.png"
   },
   "src/Resources/assets/js/admin.js": {
-    "file": "assets/admin-CVaNyMOz.js",
+    "file": "assets/admin-BA5ZIolu.js",
     "name": "admin",
     "src": "src/Resources/assets/js/admin.js",
     "isEntry": true,
@@ -53,7 +53,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/checkbox.vue": {
-    "file": "assets/checkbox-BqBfyUSr.js",
+    "file": "assets/checkbox-DRPwNhUg.js",
     "name": "checkbox",
     "src": "src/Resources/assets/js/components/configuration/fields/checkbox.vue",
     "isDynamicEntry": true,
@@ -62,7 +62,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/datetime.vue": {
-    "file": "assets/datetime-CmA2UCx-.js",
+    "file": "assets/datetime-Bsw3Qh-f.js",
     "name": "datetime",
     "src": "src/Resources/assets/js/components/configuration/fields/datetime.vue",
     "isDynamicEntry": true,
@@ -71,7 +71,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/img.vue": {
-    "file": "assets/img-Bi_sqvYT.js",
+    "file": "assets/img-DUodUf1B.js",
     "name": "img",
     "src": "src/Resources/assets/js/components/configuration/fields/img.vue",
     "isDynamicEntry": true,
@@ -80,7 +80,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/input.vue": {
-    "file": "assets/input-DLVgCrM3.js",
+    "file": "assets/input-CO4O4fBU.js",
     "name": "input",
     "src": "src/Resources/assets/js/components/configuration/fields/input.vue",
     "isDynamicEntry": true,
@@ -89,7 +89,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/textarea.vue": {
-    "file": "assets/textarea-3pk33vg2.js",
+    "file": "assets/textarea-ft3bszcN.js",
     "name": "textarea",
     "src": "src/Resources/assets/js/components/configuration/fields/textarea.vue",
     "isDynamicEntry": true,
@@ -98,7 +98,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/tiny.vue": {
-    "file": "assets/tiny-YFtS_lqV.js",
+    "file": "assets/tiny-D1CXywty.js",
     "name": "tiny",
     "src": "src/Resources/assets/js/components/configuration/fields/tiny.vue",
     "isDynamicEntry": true,
