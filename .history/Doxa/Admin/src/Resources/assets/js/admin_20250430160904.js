@@ -36,7 +36,10 @@ const app = createApp({
 	},
 	methods: {},
 	mounted() {
-		 
+		// socket.emit("testing", { data: "testing_data" });
+		//console.log("test admin.js  mounted vue vrum vruuum");
+		// Check if pkg reads both consumer and local env variables
+		console.log(import.meta.env);
 	},
 });
 
