@@ -47,3 +47,17 @@ coverage/
 /*.tgz
 
 testbench.sqlite
+
+# Windows-specific files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# JetBrains (IntelliJ, PhpStorm, WebStorm, etc.)
+.idea/
+
+# VSCode extensions and settings
+.vscode-test/
+
+# History files (local editor history)
+.history/
