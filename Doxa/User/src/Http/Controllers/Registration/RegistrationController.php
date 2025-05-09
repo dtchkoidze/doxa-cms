@@ -142,17 +142,6 @@ class RegistrationController extends Controller
             REG::clearAuthCookie();
             return redirect(REG::getSuccessAuthUrl()); 
         }
-        // if (Auth::check()) { return redirect($this->getSuccessAuthUrl()); }
-
-        // $this->getUserByVHash();
-
-        // if (!$this->user) { return redirect()->route('auth.login'); }
-
-        // if ($this->user->hasVericationPendingStatus()) { return redirect()->route('auth.login'); }
-
-        // if ($this->user->isSuspended()) { return redirect()->route('auth.suspended'); }
-
-        // if ($this->user->isActive()) { return redirect($this->getSuccessAuthUrl()); }
 
         $data = [
             'login' => REG::login(),

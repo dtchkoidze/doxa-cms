@@ -548,6 +548,8 @@ class Registration
     {
         $this->user = Auth::user();
 
+        Clog::write(self::LOG, 'setUserFromAuth() this.user: '.json_encode($this->user), Clog::DEBUG);
+
         return $this;
     }
 
@@ -565,7 +567,7 @@ class Registration
 
     protected function setAuthCookie($stage, $refresh_v_hash = false)
     {
-        Clog::write(self::LOG, '001 $this->user->v_hash: '.$this->user->v_hash, Clog::DEBUG);
+        Clog::write(self::LOG, 'setAuthCookie() $stage: '.$stage.', $refresh_v_hash: '.$refresh_v_hash.', $this->user->v_hash: '.$this->user->v_hash, Clog::DEBUG);
         if($refresh_v_hash){
             $this->user->update([
                 'v_hash' => Str::random(32)
