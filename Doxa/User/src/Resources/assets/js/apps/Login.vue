@@ -53,8 +53,12 @@
                         <span class="ml-2 text-sm">Remember Me</span>
                     </label>
                 </div>
-                <button type="button" class="ml-3 btn-primary hover:bg-gray-800 hover:ring-2 hover:ring-sky-800"
-                    @click="submit()">Sign In</button>
+                <button @click="submit()" type="button"
+                    class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <span>Sign In</span>
+                    <i v-if="processing" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
+                </button>
             </div>
 
             <!------------ ERROR -------------->

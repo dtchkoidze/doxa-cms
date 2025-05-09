@@ -14,7 +14,6 @@ Verify Email
 @endcomponent
 
 
-
 If you did not request password recovery, no further action is required, ignore this email.
 
 @endcomponent

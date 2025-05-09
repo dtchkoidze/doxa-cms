@@ -509,4 +509,5 @@ class OmniController extends Controller
         $this->repository->mm->updatePositions(request());
         return new JsonResponse(['type' => 'success', 'message' => omniModuleTrans($this->module, 'positions-updated')]);
     }
+ 
 }

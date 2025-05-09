@@ -29,11 +29,13 @@ class ApiController extends Controller
             REG::loginType() => REG::login(),
             'password' => request('password'),
         ], $remember)) {
+            Clog::write(REG::LOG, 'Success login!', Clog::DEBUG);
             REG::setUserFromAuth();
             if(!REG::user()->isActive()){
                 Auth::logout();
                 REG::clearAuthCookie();
                 if(REG::user()->hasReadyStatus()){
+                    Clog::write(REG::LOG, 'REG::user()->hasReadyStatus()', Clog::DEBUG);
                     REG::setAuthCookie('ready');
                     return $this->accountVerifedAndRedirect([
                         'message' => 'Your account is verified and waiting for activation. By clicking OK you will be redirected to activation status page.',
