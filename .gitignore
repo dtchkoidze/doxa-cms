@@ -60,4 +60,4 @@ Desktop.ini
 .vscode-test/
 
 # History files (local editor history)
-.history/
+/.history/
