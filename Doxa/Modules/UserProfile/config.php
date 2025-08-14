@@ -11,7 +11,7 @@ return [
             'fields' => [
                 'id' => 'id',
                 'status' => 'status',
-                'user_id' => 'user_id',
+                'user' => 'user',
                 'role_id' => 'role_id',
                 'role_name' => 'role_name',
                 'created_at' => 'created_at',

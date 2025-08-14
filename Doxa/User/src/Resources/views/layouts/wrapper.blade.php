@@ -11,7 +11,7 @@
                     <div class="flex-1">
                         <div class="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
                             <!-- Logo -->
-                            <img src="{{ Storage::url('/admin/logo.png') }}">
+                            <img src="/storage/logo.png">
                         </div>
                     </div>
 
@@ -23,7 +23,7 @@
 
             <!-- Image -->
             <div class="absolute top-0 bottom-0 right-0 hidden md:block md:w-1/2" aria-hidden="true">
-                <img class="object-cover object-center w-full h-full" src="{{ Storage::url('/admin/auth-image.jpg') }}" width="760" height="1024" alt="Authentication image" />
+                <img class="object-cover object-center w-full h-full" src="/storage/images/auth-image.jpg" width="760" height="1024" alt="Authentication image" />
             </div>
 
         </div>

@@ -90,7 +90,7 @@ class Repository
 
     public function getEditedItem(int $id)
     {
-        return $this->item = $this->mm->where('id', $id)->getEditingItem();
+        return $this->item = $this->mm->config('single_related_as_array')->where('id', $id)->getEditingItem();
     }
 
     public function getActualData()
@@ -154,25 +154,6 @@ class Repository
         }
     }
 
-    // protected function setError($error)
-    // {
-    //     $this->errors[] = $error;
-    // }
-
-    // public function getErrors()
-    // {
-    //     return implode(', ', $this->errors);
-    // }
-
-    // public function isError()
-    // {
-    //     return !empty($this->errors);
-    // }
-
-    /**
-     * Undocumented function
-     *
-     */
     public static function init()
     {
         $name = get_called_class();

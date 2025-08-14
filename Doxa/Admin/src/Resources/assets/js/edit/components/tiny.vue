@@ -22,6 +22,7 @@ export default {
             document_base_url: "{{ asset(" / ") }}",
             uploadRoute: window.location.origin + "/admin/tinymce/upload",
             csrfToken: this.csrf_token,
+            forced_root_block: false
         };
     },
     components: {

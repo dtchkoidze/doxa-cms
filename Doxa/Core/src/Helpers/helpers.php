@@ -5,6 +5,7 @@ use Doxa\Core\Facades\Vocab;
 use Doxa\Core\Libraries\Chlo;
 use Illuminate\Support\Carbon;
 use Doxa\Core\Facades\TextBlock;
+use Doxa\Core\Libraries\Logging\Clog;
 use Illuminate\Support\Facades\Cache;
 use Doxa\Core\Repositories\Repository;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,7 @@ use Doxa\Admin\Libraries\Configuration\Configuration;
 if (!function_exists('vocab')) {
     function vocab()
     {
+        //Clog::write('vocab', 'vocab()', 3);
         return Vocab::get(...func_get_args());
     }
 }
@@ -22,6 +24,7 @@ if (!function_exists('vocab')) {
 if (!function_exists('textblock')) {
     function textblock()
     {
+        //Clog::write('vocab', 'textblock()', 3);
         return TextBlock::get(...func_get_args());
     }
 }

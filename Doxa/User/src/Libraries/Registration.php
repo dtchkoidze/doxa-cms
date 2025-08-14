@@ -252,8 +252,11 @@ class Registration
         // Get mode and mode varuables
         $this->resolveMode();
 
+        // Try set success auth url by congig or by referer
+        $this->trySetSuccessUrl();
+
         // get referrer to redirect after login
-        $this->tryGetReferer();
+        //$this->tryGetReferer();
 
         // get auth wrapper
         $this->tryGetCustomAuthWrapper();
@@ -313,12 +316,38 @@ class Registration
         }
     }
 
+    protected function trySetSuccessUrl()
+    {
+        if(!empty($this->mode_options['success_url'])){
+            $this->setSuccessAuthUrlCookie($this->mode_options['success_url']);
+        } else {
+            $this->trySetSuccessAuthUrlByReferer();
+        }
+    }
+
+
     /**
      * Method tries to get the referrer url and save it to the cookie.
      * If referrer does not contain auth/registration url, then save it to the cookie as 
      *     "success_auth_url"
      * and use to redirect after registration.
      */
+    protected function trySetSuccessAuthUrlByReferer()
+    {
+        $referer = request()->headers->get('referer');
+        Clog::write(self::LOG, 'Referrer: '.$referer, Clog::DEBUG);
+        if($referer){
+            $parsed = parse_url($referer);
+            if(!Str::contains($parsed['path'], '/auth/')){
+                $this->setSuccessAuthUrlCookie($parsed['path']);
+                Clog::write(self::LOG, 'Add cookie back_url: '.$parsed['path'], Clog::DEBUG);
+            } else {
+                Clog::write(self::LOG, 'Url contains auth, ignore', Clog::DEBUG);
+            }
+        }
+        Clog::write(self::LOG, 'Cookie Referrer: '.$this->getSuccessAuthUrlCookie(), Clog::DEBUG);
+    }
+
     protected function tryGetReferer()
     {
         $referer = request()->headers->get('referer');

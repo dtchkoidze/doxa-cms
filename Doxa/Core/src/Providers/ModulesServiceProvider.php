@@ -178,10 +178,11 @@ class ModulesServiceProvider extends ServiceProvider
         file_exists($path_to_doxa_config) && $this->package = include $path_to_doxa_config;
         file_exists($path_to_project_config) && $this->mergeProjectConfig(include $path_to_project_config);
 
+        //dump($path_to_project_config);
 
         if(!file_exists($path_to_doxa_config) && !file_exists($path_to_project_config)) {
-            //dd($path_to_doxa_config);
-            dd($this->module .  'not found');
+            dump($path_to_project_config);
+            dd($this->module .  ' not found');
         }
 
         if (empty($this->package)) {

@@ -161,6 +161,7 @@ trait Chain
             if (sizeof($args) == 2) {
                 $this->wheres[] = new Where([$args[0], $args[1]], $this->config);
             } else {
+                //dump($args);
                 $this->wheres[] = new Where([$args[0], $args[1], $args[2]], $this->config);
             }
         }

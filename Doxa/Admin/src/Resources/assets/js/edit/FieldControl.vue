@@ -25,6 +25,8 @@ import RelatedControl from "./components/related.vue"; // OK
 import TagControl from "./components/tag.vue";
 import DatetimeControl from "./components/datetime.vue";
 
+import { toRaw } from 'vue'
+
 export default {
     data() {
        return {
@@ -69,9 +71,16 @@ export default {
             return this.field.control.charAt(0).toUpperCase() + this.field.control.slice(1)+'Control';
         },
         getValue() {
-            //console.log(this.field.key, 'this.locale_id', this.locale_id, 'this.channel_id', this.channel_id);
-            //return '';
-            return this.locale_id && typeof this.channel_id !== 'undefined' ? this.set.data.variation[this.channel_id][this.locale_id][this.fkey] : this.set.data[this.fkey];
+            var data = this.locale_id && typeof this.channel_id !== 'undefined' ? this.set.data.variation[this.channel_id][this.locale_id][this.fkey] : this.set.data[this.fkey];
+            // if(this.getFieldControl() == 'RelatedControl') {
+            //     if(data){
+            //         data = toRaw(data)
+            //         if(!Array.isArray(data)) {
+            //             data = [data];
+            //         }
+            //     }
+            // }
+            return data;
         },
         getId() {
             return this.set.item.id;

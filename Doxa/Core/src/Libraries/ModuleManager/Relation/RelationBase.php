@@ -274,7 +274,14 @@ class RelationBase
         $temp_path = $this->getImagesTempDirectory() . '/' . $name . '.'.$ext;
         Storage::put($temp_path, $image);
 
-        $temp_added_path = Storage::url($temp_path);
+        //$temp_added_path = Storage::url($temp_path);
+
+        //$temp_added_path = Storage::disk('relative')->url($temp_path);
+        $temp_added_path = Storage::disk('relative')->url($temp_path);
+
+        //https://eventer.loc/storage/images/temp/9Tmmf8W2EI6.webp
+        //                    storage/images/temp/tPBuQbuaeV6.webp
+        //dd($temp_added_path);
         
         $hash = hash_file('md5', $temp_added_path);
 
@@ -339,10 +346,7 @@ class RelationBase
 
     public function makeThumb($src, $hash, $desired_width = 100, $desired_height = 100) {
 
-        //dump('$src: '. $src);
-        //dump('Storage::url($src): '. Storage::url($src));
-
-        $src = Storage::url($src);
+        $src = Storage::disk('relative')->url($src);
         /* read the source image */
         $source_image = imagecreatefromwebp($src);
 

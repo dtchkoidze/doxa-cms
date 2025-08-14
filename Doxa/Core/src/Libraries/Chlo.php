@@ -241,6 +241,10 @@ class Chlo
         if (self::$instance->locale) {
             return self::$instance->locale->id;
         }
+        // --- 14.08.2025
+        if (self::$instance->default_locale) {
+            return self::$instance->default_locale->id;
+        }
         return 0;
     }
 
@@ -253,7 +257,10 @@ class Chlo
         if (self::$instance->locale) {
             return self::$instance->locale->code;
         }
-        return '';
+
+        return app()->getLocale();
+
+        //return '';
     }
 
     public static function getLocaleCodeById($id)

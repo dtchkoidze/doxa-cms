@@ -29,7 +29,11 @@ class TextTools
 
         $this->key = $key;
 
+        //Clog::write('vocab', 'TextTools::get() $this->key: ' . $this->key, 3);
+
         $this->locale = $locale ?: Chlo::getCurrentLocaleCode();
+
+        //Clog::write('vocab', 'TextTools::get() $this->locale: ' . $this->locale, 3);
 
         // dd($this->locale);
 

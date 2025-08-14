@@ -54,6 +54,8 @@ class AdminController extends Controller
         // dd($data);
         // ---END----- datagrid test
 
+        //dd(config('doxa.modules'));
+
         return view('admin::dashboard', ['modules' => config('doxa.modules')]);
     }
 
