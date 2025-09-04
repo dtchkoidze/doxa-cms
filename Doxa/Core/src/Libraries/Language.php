@@ -86,7 +86,13 @@ trait Language
     {
         $segments = request()->segments();
         array_unshift($segments, $this->defaultLocale);
-        return '/'.implode('/', $segments);
+        $path = '/' . implode('/', $segments);
+
+        if ($query = request()->getQueryString()) {
+            $path .= '?' . $query;
+        }
+
+        return $path;
     }
 
     protected function buildLngPath($locale = '')

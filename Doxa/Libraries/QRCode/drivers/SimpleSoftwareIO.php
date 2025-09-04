@@ -42,6 +42,10 @@ class SimpleSoftwareIO implements QRCodeDriverInteface
             $qr->format($format);
         }
 
-        return $qr->generate($params['text']);
+        // $result = $qr->generate($params['text'], $filepath);
+
+        // dd($result);
+
+        return $qr->generate($params['text'], $filepath);
     }
 }

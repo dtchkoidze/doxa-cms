@@ -22,7 +22,8 @@ export default {
             document_base_url: "{{ asset(" / ") }}",
             uploadRoute: window.location.origin + "/admin/tinymce/upload",
             csrfToken: this.csrf_token,
-            forced_root_block: false
+            forced_root_block: false,
+            convert_urls: false,
         };
     },
     components: {
@@ -73,6 +74,7 @@ export default {
                 document_base_url: this.document_base_url,
                 uploadRoute: this.uploadRoute,
                 csrfToken: this.csrf_token,
+                convert_urls: false,
 
                 automatic_uploads: true,
                 images_reuse_filename: true,

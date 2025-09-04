@@ -30,7 +30,6 @@ class LocaleMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-//dd(1);
 
 //dd(request('url_key'));
         Clog::write($this->log_name, 'LocaleMiddleware::handle', Clog::DEBUG);
