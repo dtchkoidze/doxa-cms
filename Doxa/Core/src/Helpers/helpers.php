@@ -40,6 +40,14 @@ if (!function_exists('snakeToCamel')) {
     }
 }
 
+if (!function_exists('toCamel')) {
+    function toCamel($string)
+    {
+        return str_replace(' ', '', ucwords(str_replace(['_', '-'], ' ', $string)));
+    }
+}
+
+
 if (!function_exists('generateSecret')) {
     function generateSecret($length = 6)
     {
