@@ -49,7 +49,6 @@ class LocaleMiddleware
         }
 
         Clog::write($this->log_name, 'app.multilanguage IS ON', Clog::DEBUG);
-
         Clog::write($this->log_name, '$this->routePrefix: '.$this->routePrefix, Clog::DEBUG);
         Clog::write($this->log_name, '$this->locales: '.json_encode($this->locales), Clog::DEBUG);
 

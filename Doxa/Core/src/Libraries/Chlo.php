@@ -296,15 +296,38 @@ class Chlo
 
     private function _getChannelByHostAndSetAsCurrent()
     {
+        if(!$this->channels){
+            $this->initialize();
+        }
+        
         $hostname = request()->getHttpHost();
 
-        $this->channel = $this->channelRepository->mm->with('locales')->where('host', 'in', [
-            "'" . $hostname . "'",
-            "'" . 'http://' . $hostname . "'",
-            "'" . 'https://' . $hostname . "'",
-        ])->first();
+        $templates = [
+            $hostname,
+            'http://' . $hostname,
+            'https://' . $hostname,
+        ];
 
-        return $this->channel;
+        //dump($hostname, $templates);
+        //dump($this->channels);
+
+        foreach($this->channels as $channel){
+            //dump('channel: ',$channel);
+            //dump($channel->host, $templates);
+            if(in_array($channel->host, $templates)){
+                //dump('BINGO', $channel);
+                $this->channel = $channel;
+                return $this->channel;
+            }
+        }
+
+        // $this->channel = $this->channelRepository->mm->with('locales')->where('host', 'in', [
+        //     "'" . $hostname . "'",
+        //     "'" . 'http://' . $hostname . "'",
+        //     "'" . 'https://' . $hostname . "'",
+        // ])->first();
+
+        // return $this->channel;
     }
 
     public static function isChannelExists($id)
@@ -329,13 +352,16 @@ class Chlo
     private function initialize()
     {
         $this->channels = $this->channelRepository->manager->with('locales')->where('active', 1)->get();
+        
         $this->getDefaultChannel();
         if ($this->channels) {
             foreach ($this->channels as &$channel) {
                 $this->assoc_channels[$channel->id] = $channel;
                 $_locales = [];
                 foreach ($channel->locales as $locale) {
+                    if($locale->active){
                     $_locales[$locale->id] = $locale;
+                    }
                 }
                 $channel->locales = $_locales;
             }
@@ -348,6 +374,8 @@ class Chlo
                 $this->assoc_locales[$locale->id] = $locale;
             }
         }
+
+        //dd($this->channels);
 
         // dump([
         //     '$this->channels' => $this->channels,
