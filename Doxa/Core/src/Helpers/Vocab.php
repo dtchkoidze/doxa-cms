@@ -11,8 +11,6 @@ class Vocab extends TextTools
 
     protected function findInDB()
     {
-        Clog::write('vocab', 'findInDB() key: ' . $this->key, 3);
-
         $record = ModuleManager::pm('vocabulary')
             ->channel(1)
             ->locale('current')

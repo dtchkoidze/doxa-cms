@@ -16,8 +16,10 @@ class Vocabulary extends Repository
         $item = $this->mm->with('variations')->where($params)->config('nested_variations')->first();
 
         foreach($item->variations as $variation){
-            $key = 'vocabulary.' . Chlo::getLocaleCodeById($variation->locale_id). '.' . $item->key;
-            Cache::put($key, $variation->text, $this->cache_expire);
+            if($code = Chlo::getLocaleCodeById($variation->locale_id)){
+                $key = 'vocabulary.' . $code . '.' . $item->key;
+                Cache::put($key, $variation->text, $this->cache_expire);
+            }
         }
     }
 }

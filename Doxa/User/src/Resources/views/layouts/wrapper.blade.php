@@ -29,4 +29,5 @@
         </div>
 
     </main>
+    <div class="hidden w-24"></div>
 @endsection

@@ -13,6 +13,7 @@ use Doxa\Core\Libraries\Package\Package;
 use Doxa\Core\Services\PermissionChecker;
 use Doxa\Admin\Libraries\Configuration\Configuration;
 
+
 if (!function_exists('vocab')) {
     function vocab()
     {
@@ -222,11 +223,103 @@ if (!function_exists('fmt_carbon_humanized')) {
     }
 }
 
-// $path_to_doxa = 'vendor/doxa/doxa-cms/Doxa/';
 
-// if (!function_exists('get_doxa_modules_dir_path')) {
-//     function get_doxa_modules_dir_path()
-//     {
-//         return base_path($path_to_doxa . 'Modules');
-//     }
-// }
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\LineFormatter;
+
+if (!function_exists('slog')) {
+    /**
+     * Table-style log writer with clickable path and accurate caller detection
+     *
+     * @param string|array $fileNames
+     * @param string $type [error, critical, info, warning, debug]
+     * @param mixed $message
+     */
+    function slog($fileNames, string $type, $message): void
+    {
+        $fileNames = is_array($fileNames) ? $fileNames : [$fileNames];
+
+        $levels = [
+            'debug' => Logger::DEBUG,
+            'info' => Logger::INFO,
+            'warning' => Logger::WARNING,
+            'error' => Logger::ERROR,
+            'critical' => Logger::CRITICAL,
+        ];
+        $level = $levels[$type] ?? Logger::INFO;
+
+        // get real caller (skip slog itself)
+        $traceList = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+        $caller = null;
+
+        foreach ($traceList as $trace) {
+            if (
+                isset($trace['file']) &&
+                !str_contains($trace['file'], 'helpers') &&
+                !str_contains($trace['file'], 'vendor') &&
+                !str_contains($trace['file'], 'Middleware') &&
+                ($trace['function'] ?? '') !== 'slog'
+            ) {
+                $caller = $trace;
+                break;
+            }
+        }
+
+        $file  = $caller['file'] ?? 'unknown';
+        $line  = $caller['line'] ?? 'unknown';
+        $class = $caller['class'] ?? '';
+        $func  = $caller['function'] ?? '';
+        $method = $class ? "{$class}::{$func}" : $func;
+
+        // Table formatting
+        $date = date('d M H:i:s');
+
+        // Convert arrays/objects to string
+        if (is_array($message) || is_object($message)) {
+            $message = print_r($message, true);
+        }
+
+        // Split multi-line messages properly
+        $messageLines = explode("\n", trim($message));
+        $firstLine = array_shift($messageLines);
+
+        $logLine =
+            str_pad($date, 15, ' ', STR_PAD_RIGHT) . ' | ' .
+            str_pad($method, 60, ' ', STR_PAD_RIGHT) . ' | ' .
+            str_pad($line, 5, ' ', STR_PAD_LEFT) . ' | ' .
+            $firstLine . "\n";
+
+        foreach ($messageLines as $ml) {
+            if (trim($ml) !== '') {
+                $logLine .= str_repeat(' ', 15) . ' | ' .
+                    str_repeat(' ', 60) . ' | ' .
+                    str_repeat(' ', 5) . ' | ' .
+                    $ml . "\n";
+            }
+        }
+
+        // Write to file(s)
+        foreach ($fileNames as $name) {
+            $logDate = date('Y-m-d');
+            $logPath = storage_path("logs/{$name}__{$logDate}.log");
+
+            @clearstatcache();
+            $log_size = @filesize($logPath) ?: 0;
+            $fileHandle = @fopen($logPath, 'a');
+            if (!$fileHandle) {
+                continue;
+            }
+
+            // header for new log file
+            if (empty($log_size)) {
+                fputs($fileHandle, "      Date      |                           METHOD                         | LINE | Log\n");
+                fputs($fileHandle, "----------------+----------------------------------------------------------+------+-------------------------------------------------------------\n");
+            }
+
+            fputs($fileHandle, $logLine);
+            fflush($fileHandle);
+            fclose($fileHandle);
+        }
+    }
+}

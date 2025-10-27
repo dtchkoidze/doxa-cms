@@ -270,7 +270,7 @@ class Chlo
 
     private function _getLocaleCodeById($id)
     {
-        return $this->assoc_locales[$id]->code;
+        return !empty($this->assoc_locales[$id]) ? $this->assoc_locales[$id]->code : '';
     }
 
     public static function setDefaultChannelAsCurrent()

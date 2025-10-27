@@ -17,7 +17,7 @@ class LocaleMiddleware
 
     //public $log_name;
 
-    private bool $log = true;
+    private bool $log = false;
 
     private $exceptions = [
         'sitemap.xml'
@@ -30,9 +30,7 @@ class LocaleMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-
-//dd(request('url_key'));
-        Clog::write($this->log_name, 'LocaleMiddleware::handle', Clog::DEBUG);
+        $this->log && Clog::write($this->log_name, 'LocaleMiddleware::handle', Clog::DEBUG);
 
         if($this->checkExeptions($request, $next)){
             return $next($request);
@@ -41,19 +39,19 @@ class LocaleMiddleware
         // TODO custom error page?? or 404 after testing
         !$this->initialize() && die($this->getErrorsString());
 
-        Clog::write($this->log_name, 'config(app.multilanguage): '.config('app.multilanguage'), Clog::DEBUG);
+        $this->log && Clog::write($this->log_name, 'config(app.multilanguage): '.config('app.multilanguage'), Clog::DEBUG);
 
         // process multilanguage is OFF
         if (!config('app.multilanguage')) {
             return $next($request);
         }
 
-        Clog::write($this->log_name, 'app.multilanguage IS ON', Clog::DEBUG);
-        Clog::write($this->log_name, '$this->routePrefix: '.$this->routePrefix, Clog::DEBUG);
-        Clog::write($this->log_name, '$this->locales: '.json_encode($this->locales), Clog::DEBUG);
+        $this->log && Clog::write($this->log_name, 'app.multilanguage IS ON', Clog::DEBUG);
+        $this->log && Clog::write($this->log_name, '$this->routePrefix: '.$this->routePrefix, Clog::DEBUG);
+        $this->log && Clog::write($this->log_name, '$this->locales: '.json_encode($this->locales), Clog::DEBUG);
 
         if (!$this->routePrefix || !$this->locales->contains('code', $this->routePrefix)) {
-            Clog::write($this->log_name, 'route prefix not found', Clog::DEBUG);
+            $this->log && Clog::write($this->log_name, 'route prefix not found', Clog::DEBUG);
             return redirect($this->buildPathWithLocalePrefix());
         } else {
             Chlo::set(locale: $this->routePrefix);

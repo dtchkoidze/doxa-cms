@@ -13,14 +13,14 @@ class Error
     private $log_name = 'errors';
     private $log_level = 1;
 
-    final private function __construct(){}
+    final private function __construct() {}
 
-    public static function add($message, $code = 100, $data = '')
+    public static function add($message, $code = 100, $data = '', $log_to = '')
     {
         if (static::$instance === null) {
             static::$instance = new static;
         }
-        static::$instance->addError($message, $code = 100, $data = '');
+        static::$instance->addError($message, $code, $data, $log_to);
         return static::$instance;
     }
 
@@ -48,7 +48,7 @@ class Error
         return !empty(static::$instance->errors);
     }
 
-    private function addError($message, $code = 100, $data = '')
+    private function addError($message, $code, $data, $log_to)
     {
         $this->errors[] = [
             'message' => $message,
@@ -57,25 +57,27 @@ class Error
         ];
 
         Clog::write($this->log_name, $message, $this->log_level);
+        if ($log_to) {
+            Clog::write($log_to, $message, $this->log_level);
+        }
     }
 
     private function getErrors($format = 'array', $delimiter = '<br>')
     {
-        if($format == 'array'){
+        if ($format == 'array') {
             return $this->errors;
         }
-        if($format == 'json'){
+        if ($format == 'json') {
             return json_encode($this->errors);
         }
-        if($format == 'string'){
+        if ($format == 'string') {
             $errors = collect($this->errors)->pluck('message');
             return implode($delimiter, $errors->toArray());
         }
-        if($format == 'html'){
+        if ($format == 'html') {
             return ''; // todo;
         }
 
         return $this->errors;
     }
-
 }
