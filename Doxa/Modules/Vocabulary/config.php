@@ -98,7 +98,7 @@ return [
                                 'validation_rules' => [
                                     'required',
                                     'max:200',
-                                    'regex:/^[a-zA-Z0-9\._]+$/u'
+                                    'regex:/^[a-zA-Z0-9\.\-\_]+$/u',
                                 ]
                             ],
                             [
@@ -109,7 +109,7 @@ return [
                                 'title' => ['vocabulary', 'edit_form.text'],
                                 'validation_rules' => [
                                     'string',
-                                    'max:200',
+                                    'max:300',
                                 ],
                             ],
                         ]

@@ -97,7 +97,7 @@ return [
                                 'rule' => ['text_block', 'edit_form.rules.key'],
                                 'validation_rules' => [
                                     'max:200',
-                                    'regex:/^[a-zA-Z0-9\_\.]+$/u'
+                                    'regex:/^[a-zA-Z0-9\.\-\_]+$/u',
                                 ]
                             ],
                             [

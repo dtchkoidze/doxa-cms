@@ -20,7 +20,8 @@ class LocaleMiddleware
     private bool $log = false;
 
     private $exceptions = [
-        'sitemap.xml'
+        'sitemap.xml',
+        'manifest.webmanifest',
     ];
 
     /**
