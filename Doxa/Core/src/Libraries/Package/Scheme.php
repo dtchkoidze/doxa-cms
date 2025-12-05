@@ -83,6 +83,9 @@ class Scheme
 
         $this->table_fields_list = $this->getRequiredTableFields('base');
 
+        if(empty($this->table_scheme['fields'])){
+            return;
+        }
         foreach($this->table_scheme['fields'] as $key => $val){
             if(is_numeric($key)){
                 $key = $val;

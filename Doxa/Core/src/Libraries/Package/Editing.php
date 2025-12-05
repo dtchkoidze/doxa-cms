@@ -41,7 +41,7 @@ trait Editing
     public function getEditingFields(): array
     {
         empty($this->editingFields) && $this->getEditingFieldsInfo();
-        return $this->editingFieldsByType['base'];
+        return $this->editingFieldsByType['base'] ?? [];
     }
 
     public function getEditingVariationFields(): array
