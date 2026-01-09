@@ -256,7 +256,7 @@ class Registration
         $this->trySetSuccessUrl();
 
         // get referrer to redirect after login
-        //$this->tryGetReferer();
+        $this->tryGetReferer();
 
         // get auth wrapper
         $this->tryGetCustomAuthWrapper();
@@ -350,6 +350,13 @@ class Registration
 
     protected function tryGetReferer()
     {
+        $referer = request()->get('referer');
+        if($referer){
+            Clog::write(self::LOG, 'Referer exists in request: '.$referer, Clog::DEBUG);
+            $this->setSuccessAuthUrlCookie($referer);
+            return;        
+        }
+        
         $referer = request()->headers->get('referer');
         Clog::write(self::LOG, 'Referrer: '.$referer, Clog::DEBUG);
         if($referer){

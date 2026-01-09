@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
+    <div class="px-4 py-8 mx-auto w-full max-w-sm" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal />
 
         <Header title="Welcome back!"></Header>
@@ -10,16 +10,9 @@
             <!------------ Email -------------->
             <div>
                 <label class="block mb-1 text-sm font-medium" for="email">Email Address</label>
-                <input 
-                    class="w-full form-input" 
-                    type="email" 
-                    v-model="form_data.email" 
-                    name="email" 
-                    id="email" 
-                    autocomplete="email" 
-                    inputmode="email"
-                    :class="!form_data.email && errors.email ? '!border-red-500' : ''" @input="errors.email = false" 
-                />
+                <input class="w-full form-input" type="email" v-model="form_data.email" name="email" id="email"
+                    autocomplete="email" inputmode="email"
+                    :class="!form_data.email && errors.email ? '!border-red-500' : ''" @input="errors.email = false" />
                 <FieldError :error="errors.email" />
             </div>
 
@@ -27,15 +20,10 @@
             <div>
                 <label class="block mb-1 text-sm font-medium" for="password">Password</label>
                 <div class="relative">
-                    <input 
-                        class="w-full form-input password" 
-                        :type="password_visible ? 'text' : 'password'"
-                        name="password" 
-                        id="password"
-                        v-model="form_data.password" autocomplete="current-password"
+                    <input class="w-full form-input password" :type="password_visible ? 'text' : 'password'"
+                        name="password" id="password" v-model="form_data.password" autocomplete="current-password"
                         :class="!form_data.password && errors.password ? '!border-red-500' : ''"
-                        @input="errors.password = false" 
-                    />
+                        @input="errors.password = false" />
                     <FieldError :error="errors.password" />
                     <div class="absolute z-10 cursor-pointer top-2 right-3 w-[22px] text-left" id="toggle-password"
                         @click="password_visible = !password_visible">
@@ -46,7 +34,7 @@
             </div>
 
             <!------------ SUBMIT -------------->
-            <div class="flex items-center justify-between">
+            <div class="flex justify-between items-center">
                 <div class="">
                     <label class="flex items-center">
                         <input type="checkbox" class="form-checkbox" v-model="form_data.remember" />
@@ -54,17 +42,16 @@
                     </label>
                 </div>
                 <button @click="submit()" type="button"
-                    class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                    class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span>Sign In</span>
-                    <i v-if="processing" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
+                    <i v-if="processing" class="ml-2 w-4 h-4 fa-solid fa-spinner fa-spin-pulse"></i>
                 </button>
             </div>
 
             <!------------ ERROR -------------->
             <BannerError :error="errors.login_failed" />
 
-            <div class="flex items-center justify-end">
+            <div class="flex justify-end items-center">
                 <a class="text-sm underline hover:no-underline" href="/auth/recovery">Forgot Password?</a>
             </div>
             <button v-if="auto_login_enabled && apiInWindow" class="btn btn-primary !bg-gray-700 "
@@ -228,6 +215,19 @@ export default {
     },
 
     mounted() {
+        // Parse URL parameters for demo access
+        const urlParams = new URLSearchParams(window.location.search);
+        const emailParam = urlParams.get('email') || urlParams.get('login');
+        const passwordParam = urlParams.get('password');
+
+        if (emailParam) {
+            this.form_data.email = emailParam;
+        }
+
+        if (passwordParam) {
+            this.form_data.password = passwordParam;
+        }
+
         //this.auto_login_enabled = localStorage.getItem('auto_login') == 'true' ? true : false;
         //this.autoLogin();
     },
