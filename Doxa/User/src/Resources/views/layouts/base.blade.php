@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <title>{{ projectTitle() }} | {{ $title }}</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
     {{-- VITE --}}
     {{ Vite::useBuildDirectory('doxa/user')->useHotFile('doxa-user-vite.hot') }}
@@ -24,15 +24,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 
-<body class=" text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-400">
-
-    {{-- <script>
-        if (localStorage.getItem('sidebar-expanded') == 'true') {
-            document.querySelector('body').classList.add('sidebar-expanded');
-        } else {
-            document.querySelector('body').classList.remove('sidebar-expanded');
-        }
-    </script>     --}}
+<body class="text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-400">
 
     <div id="auth-app">
         @yield('wrapper')
