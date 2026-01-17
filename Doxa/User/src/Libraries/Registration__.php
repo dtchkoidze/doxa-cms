@@ -16,7 +16,6 @@ use Doxa\Core\Libraries\Logging\Clog;
 use Doxa\User\Mail\VerificationEmail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cookie;
-use Doxa\User\Mail\AccountDeletionEmail;
 use Illuminate\Support\Facades\Validator;
 use Projects\Dusty\Libraries\Partner\Partner;
 
@@ -178,9 +177,7 @@ class Registration
      */
     protected int $verification_code_expire_in = 5;
 
-    protected $auth_token_expire = 10;
-
-    protected $v_hash_token_expire = 5;
+    protected $auth_token_expire = 60;
 
     protected string $auth_cookie_name = 'auth_data';
 
@@ -203,19 +200,18 @@ class Registration
      *
      * @var string
      */
-    public $login_type = null;
+    protected $login_type = null;
 
     /**
      * User login VALUE (user->email, user->phone ...)
      *
      * @var string
      */
-    public $login = '';
+    protected $login = '';
 
     protected $methods = [
         'register',
         'recovery',
-        'account_deletion',
     ];
 
     protected $method = '';
@@ -236,14 +232,7 @@ class Registration
     public static function init($reset = false)
     {
         if (!isset(self::$instance) || $reset) {
-
-            if (class_exists(\App\Services\Registration::class)) {
-                self::$instance = new \App\Services\Registration();
-            } else {
-                self::$instance = new Registration();
-            }
-
-            //self::$instance = new Registration();
+            self::$instance = new Registration();
             self::$instance->initialize();
         }
         return self::$instance;
@@ -329,6 +318,16 @@ class Registration
 
     protected function trySetSuccessUrl()
     {
+        if (method_exists(\App\Services\Registration::class, 'trySetSuccessAuthUrl')) {
+            Clog::write(self::LOG, 'Project has custom Registration::trySetSuccessAuthUrl()', Clog::DEBUG);
+            $success_url = \App\Services\Registration::trySetSuccessAuthUrl();
+            // if(!$success_url) {
+            //     $success_url = '/';
+            // }
+            // $this->setSuccessAuthUrlCookie($success_url);
+            return;
+        }
+
         if (!empty($this->mode_options['success_url'])) {
             $this->setSuccessAuthUrlCookie($this->mode_options['success_url']);
         } else {
@@ -387,7 +386,6 @@ class Registration
      */
     protected function tryGetCustomAuthWrapper()
     {
-        //dd($this->mode_options);
         if (!empty($this->mode_options['wrapper'])) {
             if (View::exists($this->mode_options['wrapper'])) {
                 $this->auth_wrapper =  $this->mode_options['wrapper'];
@@ -566,9 +564,6 @@ class Registration
                     case 'recovery':
                         Mail::to($this->login)->send(new RecoveryEmail($set));
                         break;
-                    case 'account_deletion':
-                        Mail::to($this->login)->send(new AccountDeletionEmail($set));
-                        break;
                 }
                 break;
             default:
@@ -585,12 +580,6 @@ class Registration
     {
         $this->user = User::where($this->login_type, $this->login)->first();
 
-        return $this;
-    }
-
-    public function getUserById($id)
-    {
-        $this->user = User::where('id', $id)->first();
         return $this;
     }
 
@@ -719,7 +708,6 @@ class Registration
         return Carbon::parse($this->user->code_sent_at)->addMinutes($this->verification_code_expire_in) < now();
     }
 
-
     protected function getResendCodeTimer()
     {
         if (!$this->user) {
@@ -731,7 +719,6 @@ class Registration
         }
         return $timer;
     }
-
 
     /**
      * Creates a new user record in the database.
@@ -766,28 +753,12 @@ class Registration
 
     protected function refreshSecret(): self
     {
-        $vhash = Str::random(32);
-
         $this->user->update([
             'secret' => generateSecret(),
-            'v_hash' => $vhash,
             'code_sent_at' => now(),
         ]);
 
-        $this->setVhashCookie($vhash);
-
         return $this;
-    }
-
-    public function setVhashCookie($vhash): self
-    {
-        Cookie::queue('v_hash', $vhash, $this->v_hash_token_expire);
-        return $this;
-    }
-
-    public function getVhashCookie(): string|null
-    {
-        return Cookie::get('v_hash');
     }
 
     protected function setUserActive()
@@ -797,11 +768,6 @@ class Registration
         ]);
 
         return $this;
-    }
-
-    public function getLogin()
-    {
-        return $this->login;
     }
 
     protected function checkNewPasswordSameAsOld($password)
@@ -906,14 +872,8 @@ class Registration
         return empty($errors) ? false : $errors;
     }
 
-    protected function getVerificationLink($method)
+    private function getVerificationLink($method)
     {
-        Clog::write('auth', 'getVerificationLink base()', [
-            'method' => $method,
-        ]);
-        if ($method == 'account_deletion') {
-            return '/my-profile/settings';
-        }
         return route('auth.verification_link', ['method' => $method]) . '?vh=' . $this->user->v_hash . '&lt=' . $this->login_type;
     }
 
