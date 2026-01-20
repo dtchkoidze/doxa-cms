@@ -1,5 +1,5 @@
 <template>
-    <div class="px-4 py-8 mx-auto w-full max-w-sm" :class="processing ? 'pointer-events-none' : ''">
+    <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal />
 
         <Header title="Welcome back!"></Header>
@@ -34,7 +34,7 @@
             </div>
 
             <!------------ SUBMIT -------------->
-            <div class="flex justify-between items-center">
+            <div class="flex items-center justify-between">
                 <div class="">
                     <label class="flex items-center">
                         <input type="checkbox" class="form-checkbox" v-model="form_data.remember" />
@@ -42,16 +42,16 @@
                     </label>
                 </div>
                 <button @click="submit()" type="button"
-                    class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span>Sign In</span>
-                    <i v-if="processing" class="ml-2 w-4 h-4 fa-solid fa-spinner fa-spin-pulse"></i>
+                    <i v-if="processing" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
                 </button>
             </div>
 
             <!------------ ERROR -------------->
             <BannerError :error="errors.login_failed" />
 
-            <div class="flex justify-end items-center">
+            <div class="flex items-center justify-end">
                 <a class="text-sm underline hover:no-underline" href="/auth/recovery">Forgot Password?</a>
             </div>
             <button v-if="auto_login_enabled && apiInWindow" class="btn btn-primary !bg-gray-700 "
@@ -219,6 +219,8 @@ export default {
         const urlParams = new URLSearchParams(window.location.search);
         const emailParam = urlParams.get('email') || urlParams.get('login');
         const passwordParam = urlParams.get('password');
+
+        console.log('emailParam:', emailParam, 'passwordParam:', passwordParam);
 
         if (emailParam) {
             this.form_data.email = emailParam;
