@@ -44,13 +44,18 @@ class Authorization
 
         switch (Route::currentRouteName()) {
             case 'auth.login':
-            case 'auth.register':
+            
             case 'auth.recovery':
                 if (Auth::check()) {
                     return redirect(Registration::getSuccessAuthUrl());
                 } else {
                     $this->clear();
                 }
+                break;
+            case 'auth.register':
+                if (Auth::check()) {
+                    $this->clear();
+                }    
                 break;
         }
 
