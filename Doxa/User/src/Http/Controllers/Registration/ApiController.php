@@ -198,6 +198,8 @@ class ApiController extends Controller
 
         REG::setReadyStatus();
 
+        REG::afterSetPassword();
+
         return $this->passwordSetResponce($method, $active = REG::isAutoActivation());
 
     }

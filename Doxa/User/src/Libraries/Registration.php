@@ -266,6 +266,10 @@ class Registration
         // Try set success auth url by congig or by referer
         $this->trySetSuccessUrl();
 
+        // Try to handle referrer data: url, header
+        // For example to set cookie or make some other actions 
+        $this->handleExtraActions();
+
         // get referrer to redirect after login
         //$this->tryGetReferer();
 
@@ -334,6 +338,11 @@ class Registration
         } else {
             $this->trySetSuccessAuthUrlByReferer();
         }
+    }
+
+    protected function handleExtraActions()
+    {
+        
     }
 
 
@@ -947,6 +956,11 @@ class Registration
     private function setSuccessAuthUrlCookie($path)
     {
         Cookie::queue('success_auth_url', $path, $this->auth_cookies_expire);
+    }
+
+    protected function afterSetPassword()
+    {
+        
     }
 
     public static function __callStatic($name, $arguments)
