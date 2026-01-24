@@ -22,6 +22,8 @@ class RegistrationController extends Controller
     {
         Clog::write(REG::LOG, 'Login page', Clog::DEBUG);
 
+        //dd(request()->all());
+
         return view('user::auth.login')->with([
             'wrapper' => REG::authWrapper(),
             'title' => 'Sign In',
