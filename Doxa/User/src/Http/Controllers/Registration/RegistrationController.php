@@ -128,9 +128,8 @@ class RegistrationController extends Controller
 
     public function logout()
     {
-        Auth::logout();
+        REG::logout();
         return redirect()->back();
-        //return redirect()->route('auth.login');
     }
 
     /**

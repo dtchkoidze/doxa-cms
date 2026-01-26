@@ -963,6 +963,12 @@ class Registration
         
     }
 
+    protected function logout()
+    {
+        Auth::logout();
+        $this->clearAuthCookie();
+    }
+
     public static function __callStatic($name, $arguments)
     {
         if (!method_exists(self::$instance, $name)) {

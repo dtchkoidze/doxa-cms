@@ -235,8 +235,7 @@ class Authorization
 
     protected function clear()
     {
-        Auth::logout();
-        Registration::clearAuthCookie();
+        Registration::logout();
     }
 
     protected function _responce($route, $data = [])
