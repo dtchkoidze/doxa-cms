@@ -13,9 +13,9 @@ class UserProfile extends Repository
 
     public $profile = null;
 
-    public function initialize($user) 
+    public function initialize($user)
     {
-        if(is_int($user)) {
+        if (is_int($user)) {
             $this->user = DB::table('users')->where('id', $user)->first();
         } else {
             $this->user = $user;
@@ -25,8 +25,8 @@ class UserProfile extends Repository
 
         return $this;
     }
-    
-    public function create($user, $role = 0) 
+
+    public function create($user, $role = 0)
     {
         $set = [
             'hash' => strtoupper(Str::random(3)),
@@ -44,5 +44,4 @@ class UserProfile extends Repository
     {
         return new UserProfile();
     }
-    
 }

@@ -55,7 +55,7 @@ class Authorization
             case 'auth.login':
                 if (Auth::check()) {
                     $this->clear();
-                }    
+                }
                 break;
         }
 
@@ -95,15 +95,18 @@ class Authorization
             case 'auth.verify':
             case 'auth.password':
             case 'auth.verification_link':
+                Clog::write('auth', 'Auth::check(): ' . Auth::check(), Clog::NOTICE);
                 if (Auth::check()) {
                     return redirect(Registration::getSuccessAuthUrl());
                 } else {
+                    Clog::write('auth', 'Registration::user(): ' . Registration::user(), Clog::NOTICE);
+                    Clog::write('auth', 'Registration::vhash(): ' . Registration::vhash(), Clog::NOTICE);
                     if (!Registration::user() || !Registration::vhash()) {
                         if (!Registration::user()) {
-                            Clog::write('auth', 'User not found!', Clog::ERROR);
+                            Clog::write('auth', '------User not found!', Clog::ERROR);
                         }
                         if (!Registration::vhash()) {
-                            Clog::write('auth', 'Vhash not defined! Manually deleted?', Clog::ERROR);
+                            Clog::write('auth', '-----Vhash not defined! Manually deleted?', Clog::ERROR);
                         }
                         $this->clear();
                         return $this->_responce('auth.error', ['error' => 'session-expired']);

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cookie;
 use Doxa\User\Mail\AccountDeletionEmail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 use Projects\Dusty\Libraries\Partner\Partner;
 
 /**
@@ -44,6 +45,9 @@ use Projects\Dusty\Libraries\Partner\Partner;
  * ----------------------------------------------
  * @method static int getResendCodeTimer()
  * @method int getResendCodeTimer()
+ * ----------------------------------------------
+ * @method static int checkResendCodeRateLimit()
+ * @method int checkResendCodeRateLimit()
  * ----------------------------------------------
  * @method static self refreshSecret()
  * @method self refreshSecret()
@@ -178,6 +182,20 @@ class Registration
      */
     protected int $verification_code_expire_in = 5;
 
+    /**
+     * Rate limiting: maximum attempts to resend verification code per time window
+     *
+     * @var integer
+     */
+    protected int $resend_code_rate_limit_max_attempts = 3;
+
+    /**
+     * Rate limiting: delay in minutes for resend verification code when limit exceeded
+     *
+     * @var integer
+     */
+    protected int|float $resend_code_rate_limit_time = 10;
+
     protected $auth_token_expire = 10;
 
     protected $v_hash_token_expire = 5;
@@ -236,7 +254,6 @@ class Registration
     public static function init($reset = false)
     {
         if (!isset(self::$instance) || $reset) {
-
             if (class_exists(\App\Services\Registration::class)) {
                 self::$instance = new \App\Services\Registration();
             } else {
@@ -256,6 +273,22 @@ class Registration
     private function initialize()
     {
         Clog::write(self::LOG, '----- START ------ Registration::initialize() -------', Clog::NOTICE);
+
+        // Override defaults from config if provided and valid
+        $verificationDelay = config('registration.verification_code_delay', null);
+        if ($verificationDelay !== null && $verificationDelay !== '' && is_numeric($verificationDelay) && (float) $verificationDelay != 0.0) {
+            $this->verification_code_delay = (float) $verificationDelay;
+        }
+
+        $maxAttempts = config('registration.resend_code_rate_limit_max_attempts', null);
+        if ($maxAttempts !== null && $maxAttempts !== '' && is_numeric($maxAttempts) && (int) $maxAttempts > 0) {
+            $this->resend_code_rate_limit_max_attempts = (int) $maxAttempts;
+        }
+
+        $rateLimitTime = config('registration.resend_code_rate_limit_time', null);
+        if ($rateLimitTime !== null && $rateLimitTime !== '' && is_numeric($rateLimitTime) && (float) $rateLimitTime > 0.0) {
+            $this->resend_code_rate_limit_time = (float) $rateLimitTime;
+        }
 
         $this->method = request()->route()->parameter('method');
         Clog::write(self::LOG, '$this->method: ' . $this->method, Clog::DEBUG);
@@ -340,10 +373,7 @@ class Registration
         }
     }
 
-    protected function handleExtraActions()
-    {
-        
-    }
+    protected function handleExtraActions() {}
 
 
     /**
@@ -734,11 +764,52 @@ class Registration
         if (!$this->user) {
             return 0;
         }
-        $timer = Carbon::parse($this->user->code_sent_at)->addMinutes($this->verification_code_delay)->timestamp - time();
+
+        // Check if rate limit delay is set in cache
+        $rateLimitDelayCacheKey = 'verification_code_rate_limit_delay_' . $this->user->id;
+        $rateLimitDelayFlag = Cache::get($rateLimitDelayCacheKey, 0);
+
+        // Use rate limit delay if flag exists, otherwise use verification_code_delay
+        $delayMinutes = $rateLimitDelayFlag > 0
+            ? $this->resend_code_rate_limit_time
+            : $this->verification_code_delay;
+
+        $timer = Carbon::parse($this->user->code_sent_at)->addMinutes($delayMinutes)->timestamp - time();
         if ($timer <= 0) {
             return 0;
         }
         return $timer;
+    }
+
+    /**
+     * Check and increment resend code attempts counter
+     * If last allowed attempt reached, saves rate limit delay to cache
+     *
+     * @return void
+     */
+    protected function checkAndIncrementResendAttempts(): void
+    {
+        if (!$this->user) {
+            return;
+        }
+
+        $cacheKey = 'verification_code_resend_counter_' . $this->user->id;
+        $timeLimitSeconds = (int) ceil($this->resend_code_rate_limit_time * 60);
+
+        // Get attempts from cache (returns 0 if cache expired or doesn't exist)
+        $attempts = Cache::get($cacheKey, 0);
+
+        // Increment attempts counter
+        $attempts++;
+        Cache::put($cacheKey, $attempts, $timeLimitSeconds);
+
+        // After last allowed attempt, save delay to cache for getResendCodeTimer()
+        if ($attempts == $this->resend_code_rate_limit_max_attempts) {
+            $rateLimitDelayCacheKey = 'verification_code_rate_limit_delay_' . $this->user->id;
+            Cache::put($rateLimitDelayCacheKey, 1, $timeLimitSeconds);
+
+            Clog::write(self::LOG, 'Last allowed attempt reached. Saved rate limit flag to cache', Clog::NOTICE);
+        }
     }
 
 
@@ -783,13 +854,37 @@ class Registration
             'code_sent_at' => now(),
         ]);
 
+        Clog::write(self::LOG, 'refreshSecret() $vhash: ' . $vhash, Clog::NOTICE);
+
         $this->setVhashCookie($vhash);
+
+        // Update auth_data cookie with new vhash if stage is set
+        $stage = $this->stage;
+        if (!$stage) {
+            // Try to get stage from auth_data cookie
+            $cookie = Cookie::get($this->auth_cookie_name);
+            if ($cookie) {
+                $data = json_decode($cookie);
+                if (!empty($data->stage)) {
+                    $stage = $data->stage;
+                }
+            }
+        }
+
+        if ($stage) {
+            $this->setAuthCookie($stage);
+        }
+
+        // Check and increment resend attempts counter AFTER sending code
+        $this->checkAndIncrementResendAttempts();
 
         return $this;
     }
 
     public function setVhashCookie($vhash): self
     {
+        Clog::write(self::LOG, 'setVhashCookie() $vhash: ' . $vhash . ' $this->v_hash_token_expire: ' . $this->v_hash_token_expire, Clog::NOTICE);
+        Cookie::queue(Cookie::forget('v_hash'));
         Cookie::queue('v_hash', $vhash, $this->v_hash_token_expire);
         return $this;
     }
@@ -958,10 +1053,7 @@ class Registration
         Cookie::queue('success_auth_url', $path, $this->auth_cookies_expire);
     }
 
-    protected function afterSetPassword()
-    {
-        
-    }
+    protected function afterSetPassword() {}
 
     protected function logout()
     {

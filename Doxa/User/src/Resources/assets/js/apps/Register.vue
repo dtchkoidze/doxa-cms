@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
+    <div class="px-4 py-8 mx-auto w-full max-w-sm" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal />
 
         <Header title="Sign Up"></Header>
@@ -20,26 +20,18 @@
             <div>
                 <label class="block mb-1 text-sm font-medium" for="email">Email Address <span
                         class="text-red-500">*</span></label>
-                <input 
-                    class="w-full form-input" 
-                    type="email" 
-                    v-model="form_data.email" 
-                    name="email" 
-                    id="email" 
-                    autocomplete="email" 
-                    inputmode="email"
-                    :class="errors.email ? '!border-red-500' : ''"
+                <input class="w-full form-input" type="email" v-model="form_data.email" name="email" id="email"
+                    autocomplete="email" inputmode="email" :class="errors.email ? '!border-red-500' : ''"
                     @input="errors.email = false; errors.register_failed = false" />
                 <FieldError :error="errors.email" />
             </div>
 
             <!------------ SUBMIT -------------->
-            <div class="flex items-center justify-end">
+            <div class="flex justify-end items-center">
                 <button @click="submit()" type="button"
-                    class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                    class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span>Submit</span>
-                    <i v-if="processing" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
+                    <i v-if="processing" class="ml-2 w-4 h-4 fa-solid fa-spinner fa-spin-pulse"></i>
                 </button>
             </div>
 
@@ -98,45 +90,45 @@ export default {
         submit() {
             this.processing = true;
             this.checkForm();
-            if(!this.isError()) {
+            if (!this.isError()) {
                 axios.postForm(`/auth/api/register`, this.form_data)
-                .then(response => {
-                    if(!response.data.success){
-                        this.setResponceErrors(response.data.errors);
-                        this.processing = false;
-                    } else {
-                        if(response.data.confirmation){
-                            response.data.confirmation.parent = this;
-                            this.$emitter.emit('open-confirm-modal', response.data.confirmation);
+                    .then(response => {
+                        if (!response.data.success) {
+                            this.setResponceErrors(response.data.errors);
                             this.processing = false;
                         } else {
-                            if(response.data.success && response.data.redirect){
-                                window.location.href = response.data.redirect;
-                                return;
+                            if (response.data.confirmation) {
+                                response.data.confirmation.parent = this;
+                                this.$emitter.emit('open-confirm-modal', response.data.confirmation);
+                                this.processing = false;
+                            } else {
+                                if (response.data.success && response.data.redirect) {
+                                    window.location.href = response.data.redirect;
+                                    return;
+                                }
                             }
                         }
-                    }
-                })
-                .catch(error => {
-                    console.log("error: ", error);
-                });
+                    })
+                    .catch(error => {
+                        console.log("error: ", error);
+                    });
             } else {
                 this.processing = false;
             }
         },
         checkForm() {
             this.errors.email = '';
-            if(!this.form_data.email.trim()) {
+            if (!this.form_data.email.trim()) {
                 this.errors.email = 'Email is required';
             } else {
                 var email_valid = emailValidate(this.form_data.email);
-                if(!email_valid) {
+                if (!email_valid) {
                     this.errors.email = 'Email is not valid';
                 }
             }
 
-            if(this.roles){
-                if(this.form_data.role == 0) {
+            if (this.roles) {
+                if (this.form_data.role == 0) {
                     this.errors.role = 'Choose Your role';
                 }
             }
@@ -144,7 +136,7 @@ export default {
         setResponceErrors(errors) {
             for (const [key, value] of Object.entries(errors)) {
                 console.log(key, value);
-                if(Array.isArray(value)){
+                if (Array.isArray(value)) {
                     this.errors[key] = value.join(', ');
                 } else {
                     this.errors[key] = value;
@@ -152,8 +144,8 @@ export default {
             }
         },
         isError() {
-            if(this.roles){
-                if(this.errors.role) {
+            if (this.roles) {
+                if (this.errors.role) {
                     return true;
                 }
             }
@@ -175,15 +167,16 @@ export default {
         confirmAccount() {
             axios.get(`auth/api/register/resend-verification-code`)
                 .then(response => {
-                    if(response.data.url){
+                    console.log('response.data: ', response.data);
+                    if (response.data.url) {
                         window.location.href = response.data.url;
                         return;
                     }
-                    if(!response.data.success && response.data.error){
+                    if (!response.data.success && response.data.error) {
                         this.errors.register_failed = response.data.error;
                         return;
                     }
-                    if(response.data.success && response.data.confirmation){
+                    if (response.data.success && response.data.confirmation) {
                         this.errors.register_failed = '';
                         this.$emitter.emit('open-confirm-modal', response.data.confirmation);
                         return;
@@ -197,7 +190,7 @@ export default {
     },
     created() {
         this._roles = this.roles;
-        if(this._roles){
+        if (this._roles) {
             this._roles.unshift({
                 id: 0,
                 title: 'Select your Role',
@@ -205,6 +198,7 @@ export default {
         }
     },
     mounted() {
+        console.log('Register mounted');
         this.$emitter.on('select-option', this.setRole);
     },
     unmounted() {

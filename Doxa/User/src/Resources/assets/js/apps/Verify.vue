@@ -1,53 +1,53 @@
 <template>
-    <div class="w-full max-w-sm px-4 py-10 mx-auto" :class="processing ? 'pointer-events-none' : ''">
+    <div class="px-4 py-10 mx-auto w-full max-w-sm" :class="processing ? 'pointer-events-none' : ''">
 
-        <ConfirmModal/>
+        <ConfirmModal />
 
         <Error v-if="fatal_error" :error="fatal_error" />
 
         <template v-else>
-            <Header title="Verification"/>
+            <Header title="Verification" />
 
             <div class="mb-2 sm">
-                Verification instructions have been sent to {{ login }}. Enter verification code below or follow provided link. Link and code valid for {{ code_expire_in }} minutes.
+                Verification instructions have been sent to {{ login }}. Enter verification code below or follow
+                provided link. Link and code valid for {{ code_expire_in }} minutes.
             </div>
 
             <div>
                 <div class="flex flex-col justify-between space-y-3 items-left">
                     <div class="my-4">
-                        <Otp/>
+                        <Otp />
                         <FieldError :error="errors.verification_code" />
                     </div>
                     <div class="flex justify-start w-full">
                         <button @click="submitCode()" type="button"
-                            class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
+                            class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                             <span>Verify</span>
-                            <i v-if="processing" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
+                            <i v-if="processing" class="ml-2 w-4 h-4 fa-solid fa-spinner fa-spin-pulse"></i>
                         </button>
                     </div>
 
                     <div class="flex flex-col mt-4 space-y-1 text-sm">
                         <div class="flex justify-between">
                             <span>Did not receive verification message?</span>
-                            <a v-if="resend_timer <= 0" href="#" class="link" @click.prevent="resendCode()">Resend code</a>
+                            <a v-if="resend_timer <= 0" href="#" class="link" @click.prevent="resendCode()">Resend
+                                code</a>
                         </div>
 
-                        <span v-if="resend_timer > 0">Resend code in {{ resend_timer }} seconds.</span>
+                        <span v-if="resend_timer > 0">Resend code in {{ formatResendTimer(resend_timer) }}.</span>
                     </div>
 
                 </div>
             </div>
 
             <!------------ FOOTER -------------->
-            <div class="flex flex-row justify-between gap-2 pt-5 mt-6 text-sm border-t border-gray-100 dark:border-gray-700/60">
-                <a
-                    class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
+            <div
+                class="flex flex-row gap-2 justify-between pt-5 mt-6 text-sm border-t border-gray-100 dark:border-gray-700/60">
+                <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/login">
                     Sign In
                 </a>
-                <a
-                    class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
+                <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/register">
                     Sign Up
                 </a>
@@ -95,18 +95,18 @@ export default {
             this.processing = true;
             this.checkForm();
             this.form_data['method'] = this.method;
-            if(!this.isError()) {
+            if (!this.isError()) {
                 axios.postForm(`auth/api/${this.method}/verify`, this.form_data)
                     .then(response => {
-                        if(response.data.confirmation){
+                        if (response.data.confirmation) {
                             this.$emitter.emit('open-confirm-modal', response.data.confirmation);
                             this.processing = false;
                         } else {
-                            if(response.data.redirect) {
+                            if (response.data.redirect) {
                                 window.location.href = response.data.redirect;
                                 return;
                             } else {
-                                if(!response.data.success){
+                                if (!response.data.success) {
                                     this.errors.verification_code = response.data.error;
                                 }
                                 this.processing = false;
@@ -121,21 +121,21 @@ export default {
             }
         },
         resendCode() {
-            if(this.resend_timer <= 0){
+            if (this.resend_timer <= 0) {
                 this.processing = true;
                 axios.get(`auth/api/${this.method}/resend-verification-code`)
                     .then(response => {
                         this.errors.verification_code = '';
 
-                        if(response.data.redirect){
+                        if (response.data.redirect) {
                             window.location.href = response.data.redirect;
                             return;
                         }
 
-                        if(response.data.confirmation){
+                        if (response.data.confirmation) {
                             this.$emitter.emit('open-confirm-modal', response.data.confirmation);
                         }
-                        if(response.data.timer){
+                        if (response.data.timer) {
                             clearInterval(this.resend_interval);
                             this.resend_timer = response.data.timer;
                             this.incrementCodeTimer();
@@ -151,21 +151,27 @@ export default {
         },
         incrementCodeTimer() {
             this.resend_interval = setInterval(() => {
-                if(this.resend_timer > 0){
+                if (this.resend_timer > 0) {
                     this.resend_timer -= 1;
                 }
             }, 1000);
         },
+        formatResendTimer(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const paddedSeconds = seconds < 10 ? '0' + seconds : seconds;
+            return `${minutes}:${paddedSeconds}`;
+        },
         checkForm() {
             this.errors.verification_code = '';
-            if(!this.form_data.verification_code.trim()) {
+            if (!this.form_data.verification_code.trim()) {
                 this.errors.verification_code = 'Verification code is required';
             }
         },
         isError() {
             return this.errors.verification_code;
         },
-        setCode(code){
+        setCode(code) {
             this.form_data.verification_code = code;
         },
     },
@@ -173,7 +179,7 @@ export default {
         this.resend_timer = this.timer;
         //console.log('this.login: ', this.login);
         //console.log('this.method: ', this.method);
-        if(this.timer){
+        if (this.timer) {
             this.incrementCodeTimer();
         }
         this.$emitter.on('set-otp', this.setCode);
