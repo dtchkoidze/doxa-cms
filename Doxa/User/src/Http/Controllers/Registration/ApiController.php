@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Doxa\Core\Libraries\Logging\Clog;
 use Doxa\User\Libraries\Registration as REG;
+use Doxa\User\Libraries\UserGeo;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -13,6 +14,10 @@ use Illuminate\Validation\Rules\Password;
 class ApiController extends Controller
 {
     use ResponceTrait;
+
+    public function __construct(
+        private UserGeo $userGeo
+    ) {}
 
     public function login()
     {
@@ -31,6 +36,7 @@ class ApiController extends Controller
         ], $remember)) {
             Clog::write(REG::LOG, 'Success login!', Clog::DEBUG);
             REG::setUserFromAuth();
+            $this->userGeo->record(REG::user()->id);
             if (!REG::user()->isActive()) {
                 Auth::logout();
                 REG::clearAuthCookie();
@@ -191,6 +197,9 @@ class ApiController extends Controller
         if (REG::isAutoActivation()) {
             REG::setUserActive();
             Auth::login(REG::user());
+            if ($method === 'register') {
+                $this->userGeo->record(REG::user()->id);
+            }
             REG::clearAuthCookie();
         }
 
