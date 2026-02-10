@@ -21,7 +21,10 @@ class UserGeo
      */
     public function record(int $userId, ?string $ip = null, ?string $userAgent = null): void
     {
-        $ip = $ip ?? request()->ip();
+        if ($ip === null) {
+            // Cloudflare provides real user IP in CF-Connecting-IP header
+            $ip = request()->header('CF-Connecting-IP') ?? request()->ip();
+        }
         $userAgent = $userAgent ?? request()->userAgent();
 
         DB::table(self::TABLE)->insert([
