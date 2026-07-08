@@ -38,6 +38,10 @@ class UserServiceProvider extends ServiceProvider
     public function register()
     {
         //$this->registerBouncer();
+
+        $this->publishes([
+            __DIR__ . '/../../database/migrations/' => database_path('migrations'),
+        ], 'doxa-user-migrations');
     }
 
     /**
