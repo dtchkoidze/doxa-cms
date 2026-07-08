@@ -36,6 +36,20 @@
             </div>
 
             <BannerError :error="errors.register_failed" />
+
+            <div class="relative my-4">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                </div>
+                <div class="relative flex justify-center text-xs">
+                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-400">or</span>
+                </div>
+            </div>
+
+            <a href="/auth/google/redirect"
+                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
+                Continue with Google
+            </a>
         </div>
 
         <!------------ FOOTER -------------->

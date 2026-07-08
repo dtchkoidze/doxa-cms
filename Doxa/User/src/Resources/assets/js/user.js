@@ -13,6 +13,7 @@ import WaitingForActivate from "./apps/WaitingForActivate.vue";
 import Recovery from "./apps/Recovery.vue";
 import WrongVerificationLink from "./apps/WrongVerificationLink.vue";
 import SessionExpired from "./apps/SessionExpired.vue";
+import GoogleLink from "./apps/GoogleLink.vue";
 
 
 //import WrongVerificationToken from "./apps/WrongVerificationToken.vue";
@@ -34,6 +35,7 @@ const app = createApp({
         Recovery,
         WrongVerificationLink,
         SessionExpired,
+        GoogleLink,
     },
     data() {
         return {};

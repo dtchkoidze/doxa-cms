@@ -3,6 +3,18 @@
 use Illuminate\Support\Facades\Route;
 use Doxa\User\Http\Controllers\Registration\RegistrationController;
 use Doxa\User\Http\Controllers\Registration\ApiController as RegistrationApiController;
+use Doxa\User\Http\Controllers\SocialAuth\GoogleController;
+
+// Google OAuth — outside authorization middleware (no pending auth_data / clear on entry)
+Route::group(['middleware' => ['web'], 'prefix' => config('app.auth_prefix')], function () {
+    Route::get('/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
+    Route::get('/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
+    Route::get('/google/link', [GoogleController::class, 'linkPage'])->name('auth.google.link');
+    Route::post('/google/link/password', [GoogleController::class, 'linkWithPassword'])->name('auth.google.link.password');
+    Route::post('/google/link/magic', [GoogleController::class, 'sendMagicLink'])->name('auth.google.link.send_magic');
+    Route::get('/google/link/magic/{token}', [GoogleController::class, 'magicLink'])->name('auth.google.link.magic');
+    Route::get('/google/link/cancel', [GoogleController::class, 'cancelLink'])->name('auth.google.link.cancel');
+});
 
 Route::group(['middleware' => ['web', 'authorization'], 'prefix' => config('app.auth_prefix')], function () {
 
@@ -58,5 +70,3 @@ Route::group(['middleware' => ['web', 'authorization'], 'prefix' => config('app.
     });
 
 });
-
-
