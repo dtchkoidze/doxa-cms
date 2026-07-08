@@ -12,6 +12,7 @@
                 <label class="block mb-1 text-sm font-medium" for="email">Email Address</label>
                 <input class="w-full form-input" type="email" v-model="form_data.email" name="email" id="email"
                     autocomplete="email" inputmode="email"
+                    :disabled="locked"
                     :class="!form_data.email && errors.email ? '!border-red-500' : ''" @input="errors.email = false" />
                 <FieldError :error="errors.email" />
             </div>
@@ -22,6 +23,7 @@
                 <div class="relative">
                     <input class="w-full form-input password" :type="password_visible ? 'text' : 'password'"
                         name="password" id="password" v-model="form_data.password" autocomplete="current-password"
+                        :disabled="locked"
                         :class="!form_data.password && errors.password ? '!border-red-500' : ''"
                         @input="errors.password = false" />
                     <FieldError :error="errors.password" />
@@ -37,13 +39,13 @@
             <div class="flex items-center justify-between">
                 <div class="">
                     <label class="flex items-center">
-                        <input type="checkbox" class="form-checkbox" v-model="form_data.remember" />
+                        <input type="checkbox" class="form-checkbox" v-model="form_data.remember" :disabled="locked" />
                         <span class="ml-2 text-sm">Remember Me</span>
                     </label>
                 </div>
-                <button @click="submit()" type="button"
+                <button @click="submit()" type="button" :disabled="locked || processing"
                     class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span>Sign In</span>
+                    <span>{{ locked ? `Try again in ${lockoutCountdown}` : 'Sign In' }}</span>
                     <i v-if="processing" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
                 </button>
             </div>
@@ -99,6 +101,8 @@ export default {
             password_visible: false,
             auto_login_enabled: false,
             processing: false,
+            lockoutSeconds: 0,
+            lockoutTimer: null,
         }
     },
     components: {
@@ -111,16 +115,28 @@ export default {
         apiInWindow() {
             return false;
             //return window.PasswordCredential;
-        }
+        },
+        locked() {
+            return this.lockoutSeconds > 0;
+        },
+        lockoutCountdown() {
+            const minutes = Math.floor(this.lockoutSeconds / 60);
+            const seconds = this.lockoutSeconds % 60;
+            return `${minutes}:${String(seconds).padStart(2, '0')}`;
+        },
     },
     methods: {
         submit() {
+            if (this.locked) {
+                return;
+            }
             this.processing = true;
             this.checkForm();
             if (!this.isError()) {
                 axios.postForm(`auth/api/login`, this.form_data)
                     .then(response => {
                         if (response.data.success) {
+                            this.clearLockout();
                             this.afterLogin();
                         }
                         if (response.data.confirmation) {
@@ -134,11 +150,15 @@ export default {
                         }
                         if (!response.data.success) {
                             this.setResponceErrors(response.data.errors);
+                            if (response.data.retry_after) {
+                                this.startLockout(response.data.retry_after);
+                            }
                         }
                         this.processing = false;
                     })
                     .catch(error => {
                         console.log("error: ", error);
+                        this.processing = false;
                     });
             } else {
                 this.processing = false;
@@ -157,7 +177,7 @@ export default {
 
         },
         setResponceErrors(errors) {
-            for (const [key, value] of Object.entries(errors)) {
+            for (const [key, value] of Object.entries(errors || {})) {
                 if (Array.isArray(value)) {
                     this.errors[key] = value.join(', ');
                 } else {
@@ -167,6 +187,32 @@ export default {
         },
         isError() {
             return this.errors.email || this.errors.password;
+        },
+        startLockout(seconds) {
+            this.clearLockoutTimer();
+            this.lockoutSeconds = Math.max(0, parseInt(seconds, 10) || 0);
+            if (!this.lockoutSeconds) {
+                return;
+            }
+            this.lockoutTimer = setInterval(() => {
+                this.lockoutSeconds -= 1;
+                if (this.lockoutSeconds <= 0) {
+                    this.clearLockout();
+                }
+            }, 1000);
+        },
+        clearLockout() {
+            this.clearLockoutTimer();
+            this.lockoutSeconds = 0;
+            if (this.errors.login_failed && this.errors.login_failed.indexOf('Too many login attempts') === 0) {
+                this.errors.login_failed = '';
+            }
+        },
+        clearLockoutTimer() {
+            if (this.lockoutTimer) {
+                clearInterval(this.lockoutTimer);
+                this.lockoutTimer = null;
+            }
         },
         afterLogin() {
             if (window.PasswordCredential) {
@@ -179,59 +225,14 @@ export default {
                 console.log("No PasswordCredential API");
             }
         },
-        // async autoLogin() {
-        //     if (window.PasswordCredential && this.auto_login_enabled) {
-        //         const credentials = await navigator.credentials.get({
-        //             password: true,
-        //         });
-
-        //         if (credentials) {
-        //             const user = {
-        //                 email: credentials.id,
-        //                 password: credentials.password,
-        //             };
-
-        //             axios.postForm(`auth/api/login`, user)
-        //                 .then(response => {
-        //                     if (response.data.confirmation) {
-        //                         console.log('confirmation open');
-        //                         this.$emitter.emit('open-confirm-modal', response.data.confirmation);
-        //                         return;
-        //                     }
-        //                     if (response.data.redirect) {
-        //                         window.location.href = response.data.redirect;
-        //                         return;
-        //                     }
-        //                     if (!response.data.success) {
-        //                         this.setResponceErrors(response.data.errors);
-        //                     }
-        //                 })
-        //                 .catch(error => {
-        //                     console.log("error: ", error);
-        //                 });
-        //         }
-        //     }
-        // },
     },
 
     mounted() {
-        // Parse URL parameters for demo access
-        const urlParams = new URLSearchParams(window.location.search);
-        const emailParam = urlParams.get('email') || urlParams.get('login');
-        const passwordParam = urlParams.get('password');
-
-        console.log('emailParam:', emailParam, 'passwordParam:', passwordParam);
-
-        if (emailParam) {
-            this.form_data.email = emailParam;
-        }
-
-        if (passwordParam) {
-            this.form_data.password = passwordParam;
-        }
-
         //this.auto_login_enabled = localStorage.getItem('auto_login') == 'true' ? true : false;
         //this.autoLogin();
+    },
+    beforeUnmount() {
+        this.clearLockoutTimer();
     },
     watch: {
         auto_login_enabled: function (newVal) {

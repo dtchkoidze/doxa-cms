@@ -52,9 +52,6 @@ Route::group(['middleware' => ['web', 'authorization'], 'prefix' => config('app.
         // verification by code api method
         Route::post('/{method}/verify', [RegistrationApiController::class, 'verificationByCode'])->name('auth.api.verification_by_code');
 
-        // remove account api method
-        Route::post('/remove_account', [RegistrationApiController::class, 'removeAccount'])->name('auth.api.remove_account');
-
         // set password api method
         Route::post('/{method}/set_password', [RegistrationApiController::class, 'setPassword'])->name('auth.api.set_password');
 

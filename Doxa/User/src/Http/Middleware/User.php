@@ -34,14 +34,14 @@ class User
 
         $request->merge(['user' => true]);
 
-        if(!auth()->user()){
+        if (!auth()->user()) {
             return redirect(route('user.login'));
         } else {
-            if(auth()->user()->isSuspended()){
+            if (auth()->user()->isSuspended()) {
                 return redirect()->route('user.suspended');
             } else {
-                if(!auth()->user()->isActive()){
-                    if(!auth()->user()->isVerifed()){
+                if (!auth()->user()->isActive()) {
+                    if (!auth()->user()->isVerifed()) {
                         return redirect()->route('user.verify');
                     } else {
                         dd('user verifed but not active, wrong logic');
@@ -50,7 +50,7 @@ class User
                     return $next($request);
                 }
             }
-        }    
+        }
 
 
         // switch (Route::currentRouteName()) {

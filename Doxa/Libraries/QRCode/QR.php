@@ -16,7 +16,7 @@ class QR
      * Text to encode
      * @var string
      */
-    protected $text = ''; 
+    protected $text = '';
 
     protected $type = '';
 
@@ -54,14 +54,14 @@ class QR
 
     protected $validator_errors = [];
 
-    private final function  __construct() 
+    private final function  __construct()
     {
         //dump( __CLASS__ . " initializes only once\n" );
     }
 
     public static function init($params, $reset = false)
     {
-        if(!isset(self::$instance) || $reset){ 
+        if (!isset(self::$instance) || $reset) {
             self::$instance = new QR();
             self::$instance->_init($params);
         }
@@ -71,19 +71,19 @@ class QR
     private function _init($params)
     {
         // dump($params);
-        foreach($params as $key => $value){
-            $validator_method = 'validate_' . $key; 
-            if(method_exists($this, $validator_method)){
+        foreach ($params as $key => $value) {
+            $validator_method = 'validate_' . $key;
+            if (method_exists($this, $validator_method)) {
                 $this->{$validator_method}($value);
             } else {
                 $this->{$key} = $value;
             }
         }
-        if(empty($params['text'])){
+        if (empty($params['text'])) {
             $this->validator_errors['text'] = 'Text is required';
         }
 
-        if(!empty($params['type'])){
+        if (!empty($params['type'])) {
             // todo
         }
 
@@ -94,7 +94,7 @@ class QR
 
     public static function validate()
     {
-        if(self::$instance === null){
+        if (self::$instance === null) {
             dd('Class not initialized. use static method init($params)');
         }
         return self::$instance->_validate();
@@ -102,7 +102,7 @@ class QR
 
     private function _validate()
     {
-        if($this->validator_errors){
+        if ($this->validator_errors) {
             return $this->validator_errors;
         }
         return true;
@@ -110,7 +110,7 @@ class QR
 
     public static function isValid()
     {
-        if(self::$instance === null){
+        if (self::$instance === null) {
             dd('Class not initialized. use static method init($params)');
         }
 
@@ -120,7 +120,7 @@ class QR
     private function getParamsArray()
     {
         $params_array = [];
-        foreach($this->params as $param){
+        foreach ($this->params as $param) {
             $params_array[$param] = $this->{$param};
         }
         return $params_array;
@@ -128,17 +128,17 @@ class QR
 
     public static function generate($format = '', $filepath = '')
     {
-        if(self::$instance === null){
+        if (self::$instance === null) {
             dd('Class not initialized. use static method init($params)');
         }
 
-        
+
         return self::$instance->_driver->generate(self::$instance->getParamsArray(), $format, $filepath);
     }
 
     private function validate_text($value)
     {
-        if(!trim($value)){
+        if (!trim($value)) {
             $this->validator_errors['text'] = 'Text is required';
             return false;
         }
@@ -150,7 +150,7 @@ class QR
     {
         $value = (int) $value;
 
-        if(!$value){
+        if (!$value) {
             $this->validator_errors['size'] = 'Size is required';
             return false;
         }
@@ -162,10 +162,10 @@ class QR
 
     private function validate_bgColor($value)
     {
-        if(!trim($value)){
+        if (!trim($value)) {
             return true;
         }
-        if( !preg_match('/^#[a-f0-9]{6}$/i', $value) ){
+        if (!preg_match('/^#[a-f0-9]{6}$/i', $value)) {
             $this->validator_errors['bgColor'] = "The background color code is not valid";
             return false;
         }
@@ -177,10 +177,10 @@ class QR
 
     private function validate_fgColor($value)
     {
-        if(!trim($value)){
+        if (!trim($value)) {
             return true;
         }
-        if( !preg_match('/^#[a-f0-9]{6}$/i', $value) ){
+        if (!preg_match('/^#[a-f0-9]{6}$/i', $value)) {
             $this->validator_errors['fgColor'] = "The color code is not valid";
             return false;
         }
@@ -202,7 +202,6 @@ class QR
         $this->margin = $value;
 
         return true;
-
     }
 
 
@@ -218,13 +217,9 @@ class QR
         array $bgColor,
         array $fgColor,
         int $margin,
-    ): void
-    {
+    ): void {
         # code...
     }
 
-    public function set()
-    {
-
-    }
+    public function set() {}
 }

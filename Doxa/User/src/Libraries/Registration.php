@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Cookie;
 use Doxa\User\Mail\AccountDeletionEmail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\RateLimiter;
 use Projects\Dusty\Libraries\Partner\Partner;
 
 /**
@@ -75,6 +76,42 @@ use Projects\Dusty\Libraries\Partner\Partner;
  * ------------------------------------------
  * @method static boolean isAutoActivation()
  * @method boolean isAutoActivation()
+ * ----------------------------------------------
+ * @method static boolean tooManyLoginAttempts()
+ * @method boolean tooManyLoginAttempts()
+ * ----------------------------------------------
+ * @method static void hitLoginAttempt()
+ * @method void hitLoginAttempt()
+ * ----------------------------------------------
+ * @method static void clearLoginAttempts()
+ * @method void clearLoginAttempts()
+ * ----------------------------------------------
+ * @method static int loginAvailableIn()
+ * @method int loginAvailableIn()
+ * ----------------------------------------------
+ * @method static string loginLockoutMessage(?int $seconds)
+ * @method string loginLockoutMessage(?int $seconds)
+ * ----------------------------------------------
+ * @method static boolean tooManyVerificationAttempts()
+ * @method boolean tooManyVerificationAttempts()
+ * ----------------------------------------------
+ * @method static void hitVerificationAttempt()
+ * @method void hitVerificationAttempt()
+ * ----------------------------------------------
+ * @method static void clearVerificationAttempts()
+ * @method void clearVerificationAttempts()
+ * ----------------------------------------------
+ * @method static int verificationAvailableIn()
+ * @method int verificationAvailableIn()
+ * ----------------------------------------------
+ * @method static string verificationLockoutMessage(?int $seconds)
+ * @method string verificationLockoutMessage(?int $seconds)
+ * ----------------------------------------------
+ * @method static boolean checkVerificationCode(?string $code)
+ * @method boolean checkVerificationCode(?string $code)
+ * ----------------------------------------------
+ * @method static self invalidateVerificationSecret()
+ * @method self invalidateVerificationSecret()
  * ----------------------------------------------
  * @method static self setUserActive()
  * @method self setUserActive()
@@ -196,6 +233,42 @@ class Registration
      */
     protected int|float $resend_code_rate_limit_time = 10;
 
+    /**
+     * Max failed password login attempts before lockout
+     *
+     * @var integer
+     */
+    protected int $login_max_attempts = 5;
+
+    /**
+     * Login lockout window in minutes
+     *
+     * @var integer|float
+     */
+    protected int|float $login_decay_minutes = 15;
+
+    /**
+     * Max failed verification-code attempts before lockout
+     *
+     * @var integer
+     */
+    protected int $verification_max_attempts = 5;
+
+    /**
+     * Verification-code lockout window in minutes
+     *
+     * @var integer|float
+     */
+    protected int|float $verification_decay_minutes = 15;
+
+    /**
+     * Plain OTP for the current request only (never persisted).
+     * Used when sending email/SMS after create/refresh.
+     *
+     * @var string|null
+     */
+    protected ?string $plain_verification_secret = null;
+
     protected $auth_token_expire = 10;
 
     protected $v_hash_token_expire = 5;
@@ -288,6 +361,26 @@ class Registration
         $rateLimitTime = config('registration.resend_code_rate_limit_time', null);
         if ($rateLimitTime !== null && $rateLimitTime !== '' && is_numeric($rateLimitTime) && (float) $rateLimitTime > 0.0) {
             $this->resend_code_rate_limit_time = (float) $rateLimitTime;
+        }
+
+        $loginMaxAttempts = config('registration.login_max_attempts', null);
+        if ($loginMaxAttempts !== null && $loginMaxAttempts !== '' && is_numeric($loginMaxAttempts) && (int) $loginMaxAttempts > 0) {
+            $this->login_max_attempts = (int) $loginMaxAttempts;
+        }
+
+        $loginDecay = config('registration.login_decay_minutes', null);
+        if ($loginDecay !== null && $loginDecay !== '' && is_numeric($loginDecay) && (float) $loginDecay > 0.0) {
+            $this->login_decay_minutes = (float) $loginDecay;
+        }
+
+        $verificationMaxAttempts = config('registration.verification_max_attempts', null);
+        if ($verificationMaxAttempts !== null && $verificationMaxAttempts !== '' && is_numeric($verificationMaxAttempts) && (int) $verificationMaxAttempts > 0) {
+            $this->verification_max_attempts = (int) $verificationMaxAttempts;
+        }
+
+        $verificationDecay = config('registration.verification_decay_minutes', null);
+        if ($verificationDecay !== null && $verificationDecay !== '' && is_numeric($verificationDecay) && (float) $verificationDecay > 0.0) {
+            $this->verification_decay_minutes = (float) $verificationDecay;
         }
 
         $this->method = request()->route()->parameter('method');
@@ -387,12 +480,12 @@ class Registration
         $referer = request()->headers->get('referer');
         Clog::write(self::LOG, 'Referrer: ' . $referer, Clog::DEBUG);
         if ($referer) {
-            $parsed = parse_url($referer);
-            if (!Str::contains($parsed['path'], '/auth/')) {
-                $this->setSuccessAuthUrlCookie($parsed['path']);
-                Clog::write(self::LOG, 'Add cookie back_url: ' . $parsed['path'], Clog::DEBUG);
+            $safe = $this->sanitizeSafeRedirectUrl($referer);
+            if ($safe) {
+                $this->setSuccessAuthUrlCookie($safe);
+                Clog::write(self::LOG, 'Add cookie back_url: ' . $safe, Clog::DEBUG);
             } else {
-                Clog::write(self::LOG, 'Url contains auth, ignore', Clog::DEBUG);
+                Clog::write(self::LOG, 'Referrer ignored (unsafe or auth path)', Clog::DEBUG);
             }
         }
         Clog::write(self::LOG, 'Cookie Referrer: ' . $this->getSuccessAuthUrlCookie(), Clog::DEBUG);
@@ -410,12 +503,12 @@ class Registration
         $referer = request()->headers->get('referer');
         Clog::write(self::LOG, 'Referrer: ' . $referer, Clog::DEBUG);
         if ($referer) {
-            $parsed = parse_url($referer);
-            if (!Str::contains($parsed['path'], '/auth/')) {
-                $this->setSuccessAuthUrlCookie($parsed['path']);
-                Clog::write(self::LOG, 'Add cookie back_url: ' . $parsed['path'], Clog::DEBUG);
+            $safe = $this->sanitizeSafeRedirectUrl($referer);
+            if ($safe) {
+                $this->setSuccessAuthUrlCookie($safe);
+                Clog::write(self::LOG, 'Add cookie back_url: ' . $safe, Clog::DEBUG);
             } else {
-                Clog::write(self::LOG, 'Url contains auth, ignore', Clog::DEBUG);
+                Clog::write(self::LOG, 'Referrer ignored (unsafe or auth path)', Clog::DEBUG);
             }
         }
         Clog::write(self::LOG, 'Cookie Referrer: ' . $this->getSuccessAuthUrlCookie(), Clog::DEBUG);
@@ -449,16 +542,17 @@ class Registration
     }
 
     /**
-     * Set is_admin property if admin mode.
+     * Public auth must never elevate privilege from ?mode= or custom_auth options.
+     * Admin users are created only via privileged flows (admin panel / seeded accounts).
      *
      * @return void
      */
     protected function isAdmin()
     {
         if (!empty($this->mode_options['admin'])) {
-            $this->is_admin =  true;
-            Clog::write(self::LOG, 'admin: true', Clog::NOTICE);
+            Clog::write(self::LOG, 'mode_options.admin ignored for public auth (admin flag not granted)', Clog::NOTICE);
         }
+        $this->is_admin = false;
     }
 
     /**
@@ -591,9 +685,14 @@ class Registration
     {
         $set = [
             'verification_link' => $this->getVerificationLink($method),
-            'secret' => $this->user->secret,
+            'secret' => $this->plain_verification_secret,
             $this->login_type => $this->login,
         ];
+
+        if (empty($set['secret'])) {
+            Clog::write(self::LOG, 'sendMessage() skipped: plain verification secret missing (already consumed or never set)', Clog::ERROR);
+            return $this;
+        }
 
         switch ($this->login_type) {
             case 'email':
@@ -613,6 +712,9 @@ class Registration
             default:
                 break;
         }
+
+        // Do not keep plaintext OTP in memory longer than needed for this request
+        $this->plain_verification_secret = null;
 
         return $this;
     }
@@ -702,7 +804,7 @@ class Registration
     {
         Clog::write(self::LOG, 'getSuccessAuthUrl()', Clog::DEBUG);
 
-        $this->success_auth_url = $this->getSuccessAuthUrlCookie();
+        $this->success_auth_url = $this->sanitizeSafeRedirectUrl($this->getSuccessAuthUrlCookie());
         if ($this->success_auth_url) {
             Clog::write(self::LOG, 'success_auth_url exists in cookie: ' . $this->success_auth_url, Clog::DEBUG);
             Clog::write(self::LOG, 'METHOD ENDS, $this->success_auth_url: ' . $this->success_auth_url, Clog::DEBUG);
@@ -729,7 +831,7 @@ class Registration
         $_profile = mr('user_profile');
         if (method_exists($_profile, 'getSuccessAuthUrl')) {
             Clog::write(self::LOG, 'UserProfile exists in project', Clog::DEBUG);
-            $this->success_auth_url = mr('user_profile')->getSuccessAuthUrl($this->user);
+            $this->success_auth_url = $this->sanitizeSafeRedirectUrl(mr('user_profile')->getSuccessAuthUrl($this->user));
             Clog::write(self::LOG, '$this->success_auth_url from project UserProfile::getSuccessAuthUrl(): ' . $this->success_auth_url, Clog::DEBUG);
             if ($this->success_auth_url) {
                 return $this->success_auth_url;
@@ -740,10 +842,190 @@ class Registration
         return '/';
     }
 
+    /**
+     * Allow only relative same-site paths (or same-host absolute URLs reduced to path+query).
+     * Blocks open redirects: //evil, http(s)://foreign, javascript:, etc.
+     */
+    private function sanitizeSafeRedirectUrl(?string $url): ?string
+    {
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        // Reject control chars / backslash (Windows / browser path tricks)
+        if (preg_match('/[\x00-\x1f\\\\]/', $url)) {
+            Clog::write(self::LOG, 'Unsafe success_auth_url rejected (control/backslash): ' . $url, Clog::WARNING);
+            return null;
+        }
+
+        $decoded = rawurldecode($url);
+        if (preg_match('#^(javascript|data|vbscript):#i', $decoded)) {
+            Clog::write(self::LOG, 'Unsafe success_auth_url rejected (scheme): ' . $url, Clog::WARNING);
+            return null;
+        }
+
+        // Protocol-relative: //evil.com
+        if (str_starts_with($url, '//') || str_starts_with($decoded, '//')) {
+            Clog::write(self::LOG, 'Unsafe success_auth_url rejected (protocol-relative): ' . $url, Clog::WARNING);
+            return null;
+        }
+
+        // Absolute URL — only same host, then use path (+ query/fragment)
+        if (preg_match('#^https?://#i', $url) || preg_match('#^https?://#i', $decoded)) {
+            $parsed = parse_url($url);
+            $appHost = parse_url(config('app.url'), PHP_URL_HOST) ?: request()->getHost();
+            if (empty($parsed['host']) || strcasecmp($parsed['host'], (string) $appHost) !== 0) {
+                Clog::write(self::LOG, 'Unsafe success_auth_url rejected (foreign host): ' . $url, Clog::WARNING);
+                return null;
+            }
+            $path = $parsed['path'] ?? '/';
+            if (isset($parsed['query'])) {
+                $path .= '?' . $parsed['query'];
+            }
+            if (isset($parsed['fragment'])) {
+                $path .= '#' . $parsed['fragment'];
+            }
+            $url = $path;
+        }
+
+        // Must be a relative path starting with a single /
+        if (!str_starts_with($url, '/') || str_starts_with($url, '//')) {
+            Clog::write(self::LOG, 'Unsafe success_auth_url rejected (not relative path): ' . $url, Clog::WARNING);
+            return null;
+        }
+
+        // Do not bounce back into auth flow
+        if (Str::contains($url, '/auth/')) {
+            Clog::write(self::LOG, 'success_auth_url ignored (auth path): ' . $url, Clog::DEBUG);
+            return null;
+        }
+
+        return $url;
+    }
+
 
     protected function isAutoActivation()
     {
         return !(bool) $this->user->isAdmin();
+    }
+
+    protected function loginRateLimiterKey(): string
+    {
+        $login = strtolower((string) $this->login);
+        return 'login:' . sha1($login . '|' . request()->ip());
+    }
+
+    protected function tooManyLoginAttempts(): bool
+    {
+        return RateLimiter::tooManyAttempts($this->loginRateLimiterKey(), $this->login_max_attempts);
+    }
+
+    protected function hitLoginAttempt(): void
+    {
+        RateLimiter::hit($this->loginRateLimiterKey(), (int) ceil($this->login_decay_minutes * 60));
+    }
+
+    protected function clearLoginAttempts(): void
+    {
+        RateLimiter::clear($this->loginRateLimiterKey());
+    }
+
+    protected function loginAvailableIn(): int
+    {
+        return RateLimiter::availableIn($this->loginRateLimiterKey());
+    }
+
+    protected function loginLockoutMessage(int $seconds = null): string
+    {
+        $seconds = $seconds ?? $this->loginAvailableIn();
+        $minutes = max(1, (int) ceil($seconds / 60));
+
+        return 'Too many login attempts. Try again in ' . $minutes . ' ' . ($minutes === 1 ? 'minute' : 'minutes') . '.';
+    }
+
+    protected function verificationRateLimiterKey(): string
+    {
+        $userId = $this->user?->id ?? 'unknown';
+        return 'verify:' . sha1((string) $userId . '|' . request()->ip());
+    }
+
+    protected function tooManyVerificationAttempts(): bool
+    {
+        return RateLimiter::tooManyAttempts($this->verificationRateLimiterKey(), $this->verification_max_attempts);
+    }
+
+    protected function hitVerificationAttempt(): void
+    {
+        RateLimiter::hit($this->verificationRateLimiterKey(), (int) ceil($this->verification_decay_minutes * 60));
+    }
+
+    protected function clearVerificationAttempts(): void
+    {
+        RateLimiter::clear($this->verificationRateLimiterKey());
+    }
+
+    protected function verificationAvailableIn(): int
+    {
+        return RateLimiter::availableIn($this->verificationRateLimiterKey());
+    }
+
+    protected function verificationLockoutMessage(int $seconds = null): string
+    {
+        $seconds = $seconds ?? $this->verificationAvailableIn();
+        $minutes = max(1, (int) ceil($seconds / 60));
+
+        return 'Too many verification attempts. Try again in ' . $minutes . ' ' . ($minutes === 1 ? 'minute' : 'minutes') . '.';
+    }
+
+    /**
+     * Issue a new OTP: store hash in DB, keep plaintext only for this request (email).
+     */
+    protected function issueVerificationSecret(bool $rotate_vhash = false): self
+    {
+        $plain = generateSecret();
+        $this->plain_verification_secret = $plain;
+
+        $set = [
+            'secret' => Hash::make($plain),
+            'code_sent_at' => now(),
+        ];
+
+        if ($rotate_vhash) {
+            $set['v_hash'] = Str::random(32);
+        }
+
+        $this->user->update($set);
+
+        return $this;
+    }
+
+    protected function checkVerificationCode(?string $code): bool
+    {
+        $code = trim((string) $code);
+        if ($code === '' || empty($this->user?->secret)) {
+            return false;
+        }
+
+        return Hash::check($code, $this->user->secret);
+    }
+
+    /**
+     * Invalidate OTP after successful verification (no email send).
+     */
+    protected function invalidateVerificationSecret(): self
+    {
+        $this->plain_verification_secret = null;
+        $this->user->update([
+            // Unusable as a 6-digit OTP; keeps column non-null for schema
+            'secret' => Hash::make(Str::random(40)),
+        ]);
+
+        return $this;
     }
 
     /**
@@ -821,11 +1103,15 @@ class Registration
      */
     protected function createUser(): self
     {
+        $plain = generateSecret();
+        $this->plain_verification_secret = $plain;
+
         $set[$this->login_type] = $this->login;
-        $set['admin'] = $this->is_admin ? 1 : 0;
+        // Never create admin users from the public registration flow (?mode=admin, etc.)
+        $set['admin'] = 0;
 
         $set = array_merge($set, [
-            'secret' => generateSecret(),
+            'secret' => Hash::make($plain),
             'status' => self::VERIFICATION_PENDING_STATUS,
             'code_sent_at' => now(),
             'v_hash' => Str::random(32),
@@ -846,13 +1132,8 @@ class Registration
 
     protected function refreshSecret(): self
     {
-        $vhash = Str::random(32);
-
-        $this->user->update([
-            'secret' => generateSecret(),
-            'v_hash' => $vhash,
-            'code_sent_at' => now(),
-        ]);
+        $this->issueVerificationSecret(true);
+        $vhash = $this->user->v_hash;
 
         Clog::write(self::LOG, 'refreshSecret() $vhash: ' . $vhash, Clog::NOTICE);
 
@@ -1050,7 +1331,12 @@ class Registration
 
     private function setSuccessAuthUrlCookie($path)
     {
-        Cookie::queue('success_auth_url', $path, $this->auth_cookies_expire);
+        $safe = $this->sanitizeSafeRedirectUrl(is_string($path) ? $path : null);
+        if (!$safe) {
+            Clog::write(self::LOG, 'setSuccessAuthUrlCookie skipped (unsafe): ' . (string) $path, Clog::WARNING);
+            return;
+        }
+        Cookie::queue('success_auth_url', $safe, $this->auth_cookies_expire);
     }
 
     protected function afterSetPassword() {}
@@ -1058,6 +1344,11 @@ class Registration
     protected function logout()
     {
         Auth::logout();
+
+        $session = request()->session();
+        $session->invalidate();
+        $session->regenerateToken();
+
         $this->clearAuthCookie();
     }
 
