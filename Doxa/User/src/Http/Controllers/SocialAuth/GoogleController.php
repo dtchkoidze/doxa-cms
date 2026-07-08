@@ -5,6 +5,7 @@ namespace Doxa\User\Http\Controllers\SocialAuth;
 use App\Http\Controllers\Controller;
 use Doxa\Core\Libraries\Logging\Clog;
 use Doxa\User\Libraries\SocialAuthService;
+use Doxa\User\Libraries\Registration as REG;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -42,8 +43,11 @@ class GoogleController extends Controller
             return redirect()->route('auth.login')->with('error', 'Session expired. Please sign in with Google again.');
         }
 
+        // Keep wrapper consistent with other auth pages (custom_auth.wrapper / mode cookie)
+        REG::init();
+
         return view('user::auth.google-link', [
-            'wrapper' => 'user::layouts.wrapper',
+            'wrapper' => REG::authWrapper(),
             'title' => 'Link Google account',
             'email' => $pending['email'] ?? '',
         ]);
