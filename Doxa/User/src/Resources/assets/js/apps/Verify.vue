@@ -20,9 +20,9 @@
                         <FieldError :error="errors.verification_code" />
                     </div>
                     <div class="flex justify-start w-full">
-                        <button @click="submitCode()" type="button"
+                        <button @click="submitCode()" type="button" :disabled="locked || processing"
                             class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span>Verify</span>
+                            <span>{{ locked ? `Try again in ${lockoutCountdown}` : 'Verify' }}</span>
                             <i v-if="processing" class="ml-2 w-4 h-4 fa-solid fa-spinner fa-spin-pulse"></i>
                         </button>
                     </div>
@@ -30,7 +30,7 @@
                     <div class="flex flex-col mt-4 space-y-1 text-sm">
                         <div class="flex justify-between">
                             <span>Did not receive verification message?</span>
-                            <a v-if="resend_timer <= 0" href="#" class="link" @click.prevent="resendCode()">Resend
+                            <a v-if="resend_timer <= 0 && !locked" href="#" class="link" @click.prevent="resendCode()">Resend
                                 code</a>
                         </div>
 
@@ -88,10 +88,25 @@ export default {
             resend_interval: null,
             fatal_error: null,
             processing: false,
+            lockoutSeconds: 0,
+            lockoutTimer: null,
         }
+    },
+    computed: {
+        locked() {
+            return this.lockoutSeconds > 0;
+        },
+        lockoutCountdown() {
+            const minutes = Math.floor(this.lockoutSeconds / 60);
+            const seconds = this.lockoutSeconds % 60;
+            return `${minutes}:${String(seconds).padStart(2, '0')}`;
+        },
     },
     methods: {
         submitCode() {
+            if (this.locked) {
+                return;
+            }
             this.processing = true;
             this.checkForm();
             this.form_data['method'] = this.method;
@@ -108,6 +123,9 @@ export default {
                             } else {
                                 if (!response.data.success) {
                                     this.errors.verification_code = response.data.error;
+                                    if (response.data.retry_after) {
+                                        this.startLockout(response.data.retry_after);
+                                    }
                                 }
                                 this.processing = false;
                             }
@@ -115,17 +133,22 @@ export default {
                     })
                     .catch(error => {
                         console.log("error: ", error);
+                        this.processing = false;
                     });
             } else {
                 this.processing = false;
             }
         },
         resendCode() {
+            if (this.locked) {
+                return;
+            }
             if (this.resend_timer <= 0) {
                 this.processing = true;
                 axios.get(`auth/api/${this.method}/resend-verification-code`)
                     .then(response => {
                         this.errors.verification_code = '';
+                        this.clearLockout();
 
                         if (response.data.redirect) {
                             window.location.href = response.data.redirect;
@@ -146,6 +169,7 @@ export default {
                     })
                     .catch(error => {
                         console.log("error: ", error);
+                        this.processing = false;
                     });
             }
         },
@@ -174,6 +198,32 @@ export default {
         setCode(code) {
             this.form_data.verification_code = code;
         },
+        startLockout(seconds) {
+            this.clearLockoutTimer();
+            this.lockoutSeconds = Math.max(0, parseInt(seconds, 10) || 0);
+            if (!this.lockoutSeconds) {
+                return;
+            }
+            this.lockoutTimer = setInterval(() => {
+                this.lockoutSeconds -= 1;
+                if (this.lockoutSeconds <= 0) {
+                    this.clearLockout();
+                }
+            }, 1000);
+        },
+        clearLockout() {
+            this.clearLockoutTimer();
+            this.lockoutSeconds = 0;
+            if (this.errors.verification_code && this.errors.verification_code.indexOf('Too many verification attempts') === 0) {
+                this.errors.verification_code = '';
+            }
+        },
+        clearLockoutTimer() {
+            if (this.lockoutTimer) {
+                clearInterval(this.lockoutTimer);
+                this.lockoutTimer = null;
+            }
+        },
     },
     mounted() {
         this.resend_timer = this.timer;
@@ -186,6 +236,7 @@ export default {
     },
     unmounted() {
         this.$emitter.off('set-otp', this.setCode);
+        this.clearLockoutTimer();
     },
 };
 </script>

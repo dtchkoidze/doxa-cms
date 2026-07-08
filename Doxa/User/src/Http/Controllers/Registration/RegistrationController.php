@@ -133,6 +133,21 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Account suspended page
+     *
+     * @return View
+     */
+    public function suspended(): View
+    {
+        Clog::write(REG::LOG, 'Suspended page', Clog::DEBUG);
+
+        return view('user::auth.suspended', [
+            'wrapper' => REG::authWrapper(),
+            'title' => 'Account suspended',
+        ]);
+    }
+
+    /**
      * Waiting for activate page
      * 
      * @return View

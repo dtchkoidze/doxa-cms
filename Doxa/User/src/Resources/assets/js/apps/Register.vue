@@ -155,15 +155,6 @@ export default {
             this.form_data.role = role;
             this.errors.role = false;
         },
-        removeAccount() {
-            axios.get(`api/auth/remove_account`)
-                .then(response => {
-                    this.$emitter.emit('open-confirm-modal', response.data.confirmation);
-                })
-                .catch(error => {
-                    console.log("error: ", error);
-                });
-        },
         confirmAccount() {
             axios.get(`auth/api/register/resend-verification-code`)
                 .then(response => {

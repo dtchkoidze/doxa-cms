@@ -52,11 +52,9 @@ if (!function_exists('toCamel')) {
 if (!function_exists('generateSecret')) {
     function generateSecret($length = 6)
     {
-        $include_chars = "0123456789";
-        $charLength = strlen($include_chars);
         $string = '';
         for ($i = 0; $i < $length; $i++) {
-            $string .= $include_chars[rand(0, $charLength - 1)];
+            $string .= (string) random_int(0, 9);
         }
         return $string;
     }

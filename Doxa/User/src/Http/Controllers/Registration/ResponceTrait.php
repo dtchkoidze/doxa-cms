@@ -74,6 +74,26 @@ trait ResponceTrait
         ]));
     }
 
+    protected function responceLoginLocked(int $retryAfter)
+    {
+        return response()->json(collect([
+            'success' => false,
+            'retry_after' => $retryAfter,
+            'errors' => [
+                'login_failed' => REG::loginLockoutMessage($retryAfter),
+            ],
+        ]));
+    }
+
+    protected function responceVerificationLocked(int $retryAfter)
+    {
+        return response()->json(collect([
+            'success' => false,
+            'retry_after' => $retryAfter,
+            'error' => REG::verificationLockoutMessage($retryAfter),
+        ]));
+    }
+
     protected function responceSessionExpiredConfirmation($data = [])
     {
         $confirmation = [

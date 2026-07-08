@@ -37,18 +37,18 @@ class Admin
 
         $request->merge(['admin' => true]);
 
-        if(!auth()->user()){
-            return redirect(route('auth.login').'?mode=admin');
+        if (!auth()->user()) {
+            return redirect(route('auth.login') . '?mode=admin');
         } else {
-            if(!auth()->user()->isAdmin()){
+            if (!auth()->user()->isAdmin()) {
                 Auth::logout();
-                return redirect(route('auth.login').'?mode=admin');
+                return redirect(route('auth.login') . '?mode=admin');
             }
-            if(auth()->user()->isSuspended()){
+            if (auth()->user()->isSuspended()) {
                 return redirect()->route('auth.suspended');
             } else {
-                if(!auth()->user()->isActive()){
-                    if(auth()->user()->isVerifed()){
+                if (!auth()->user()->isActive()) {
+                    if (auth()->user()->isVerifed()) {
                         return redirect()->route('auth.waiting_for_activate');
                     } else {
                         return redirect()->route('auth.verify');
@@ -61,7 +61,5 @@ class Admin
                 }
             }
         }
-
     }
-
 }

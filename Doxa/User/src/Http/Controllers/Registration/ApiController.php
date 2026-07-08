@@ -21,11 +21,16 @@ class ApiController extends Controller
 
     public function login()
     {
-        Clog::write(REG::LOG, 'Login user by API: ' . json_encode(request()->all()), Clog::DEBUG);
+        Clog::write(REG::LOG, 'Login user by API: ' . json_encode(request()->except(['password'])), Clog::DEBUG);
 
         $errors = REG::validateLoginRequest();
         if ($errors) {
             return $this->errorsResponce($errors);
+        }
+
+        if (REG::tooManyLoginAttempts()) {
+            Clog::write(REG::LOG, 'Login locked out for ' . REG::login() . ' / ' . request()->ip(), Clog::NOTICE);
+            return $this->responceLoginLocked(REG::loginAvailableIn());
         }
 
         $remember = request()->boolean('remember');
@@ -35,6 +40,7 @@ class ApiController extends Controller
             'password' => request('password'),
         ], $remember)) {
             Clog::write(REG::LOG, 'Success login!', Clog::DEBUG);
+            REG::clearLoginAttempts();
             REG::setUserFromAuth();
             $this->userGeo->record(REG::user()->id);
             if (!REG::user()->isActive()) {
@@ -54,6 +60,11 @@ class ApiController extends Controller
                 return $this->redirectResponce(REG::getSuccessAuthUrl());
             }
         } else {
+            REG::hitLoginAttempt();
+            if (REG::tooManyLoginAttempts()) {
+                Clog::write(REG::LOG, 'Login locked out after failed attempt for ' . REG::login() . ' / ' . request()->ip(), Clog::NOTICE);
+                return $this->responceLoginLocked(REG::loginAvailableIn());
+            }
             return $this->responceLoginFailed();
         }
     }
@@ -136,6 +147,8 @@ class ApiController extends Controller
 
         REG::refreshSecret()->sendMessage($method);
 
+        REG::clearVerificationAttempts();
+
         return $this->responceCodeSent($method);
     }
 
@@ -148,10 +161,9 @@ class ApiController extends Controller
     {
         Clog::write(REG::LOG, 'verificationByCode(' . $method . ')', Clog::DEBUG);
 
-        // wrong code
-        if (REG::user()->secret !== trim(request('verification_code'))) {
-            Clog::write(REG::LOG, 'wrong verification code, ' . trim(request('verification_code')) . ', provided', Clog::NOTICE);
-            return $this->errorResponce('Wrong verification code.');
+        if (REG::tooManyVerificationAttempts()) {
+            Clog::write(REG::LOG, 'Verification locked out for user ' . REG::login() . ' / ' . request()->ip(), Clog::NOTICE);
+            return $this->responceVerificationLocked(REG::verificationAvailableIn());
         }
 
         // code expired
@@ -160,7 +172,18 @@ class ApiController extends Controller
             return $this->errorResponce('Verification code is expired.');
         }
 
-        REG::refreshSecret();
+        // wrong code
+        if (!REG::checkVerificationCode(request('verification_code'))) {
+            REG::hitVerificationAttempt();
+            Clog::write(REG::LOG, 'wrong verification code provided', Clog::NOTICE);
+            if (REG::tooManyVerificationAttempts()) {
+                return $this->responceVerificationLocked(REG::verificationAvailableIn());
+            }
+            return $this->errorResponce('Wrong verification code.');
+        }
+
+        REG::clearVerificationAttempts();
+        REG::invalidateVerificationSecret();
         REG::setAuthCookie('password', true);
 
         REG::setPasswordPendingStatus();

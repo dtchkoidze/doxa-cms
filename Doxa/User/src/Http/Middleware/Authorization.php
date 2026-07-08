@@ -189,7 +189,7 @@ class Authorization
         //Clog::write('auth', 'MIDDLEWARE 003', Clog::NOTICE);
 
         /**
-         * check status
+         * check status — read only, redirect to the correct step (do not mutate status here)
          */
         switch (Route::currentRouteName()) {
             case 'auth.verify':
@@ -206,15 +206,23 @@ class Authorization
                         $registration->getUserById(Auth::id());
                         break;
                     default:
-                        if (Route::currentRouteName() == 'auth.verify' && !Registration::user()->hasVericationPendingStatus()) {
-                            Registration::setVerificationdPendingStatus();
+                        $user = Registration::user();
+                        if ($user->hasVericationPendingStatus()) {
+                            break;
                         }
-                        if (!Registration::user()->hasVericationPendingStatus()) {
-                            Clog::write('auth', 'ERROR: Verify page but user status is wrong: ' . Registration::user()->getStatus(), Clog::ERROR);
-                            $this->clear();
-                            return $this->_responce('auth.login');
+
+                        Clog::write('auth', 'Verify route but user status is ' . $user->getStatus() . ' — redirecting to correct step', Clog::NOTICE);
+
+                        if ($user->hasPasswordPendingStatus()) {
+                            return $this->_responce('auth.password', ['method' => Registration::method()]);
                         }
-                        break;
+
+                        if ($user->hasReadyStatus() && !$user->isActive()) {
+                            return $this->_responce('auth.waiting_for_activate');
+                        }
+
+                        $this->clear();
+                        return $this->_responce('auth.error', ['error' => 'session-expired']);
                 }
                 break;
         }
