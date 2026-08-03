@@ -8,21 +8,25 @@ use Doxa\User\Http\Controllers\SocialAuth\FacebookController;
 
 // Social OAuth — outside authorization middleware (no pending auth_data / clear on entry)
 Route::group(['middleware' => ['web'], 'prefix' => config('app.auth_prefix')], function () {
-    Route::get('/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
-    Route::get('/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
-    Route::get('/google/link', [GoogleController::class, 'linkPage'])->name('auth.google.link');
-    Route::post('/google/link/password', [GoogleController::class, 'linkWithPassword'])->name('auth.google.link.password');
-    Route::post('/google/link/magic', [GoogleController::class, 'sendMagicLink'])->name('auth.google.link.send_magic');
-    Route::get('/google/link/magic/{token}', [GoogleController::class, 'magicLink'])->name('auth.google.link.magic');
-    Route::get('/google/link/cancel', [GoogleController::class, 'cancelLink'])->name('auth.google.link.cancel');
+    if (config('services.google.auth_enabled')) {
+        Route::get('/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
+        Route::get('/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
+        Route::get('/google/link', [GoogleController::class, 'linkPage'])->name('auth.google.link');
+        Route::post('/google/link/password', [GoogleController::class, 'linkWithPassword'])->name('auth.google.link.password');
+        Route::post('/google/link/magic', [GoogleController::class, 'sendMagicLink'])->name('auth.google.link.send_magic');
+        Route::get('/google/link/magic/{token}', [GoogleController::class, 'magicLink'])->name('auth.google.link.magic');
+        Route::get('/google/link/cancel', [GoogleController::class, 'cancelLink'])->name('auth.google.link.cancel');
+    }
 
-    Route::get('/facebook/redirect', [FacebookController::class, 'redirect'])->name('auth.facebook.redirect');
-    Route::get('/facebook/callback', [FacebookController::class, 'callback'])->name('auth.facebook.callback');
-    Route::get('/facebook/link', [FacebookController::class, 'linkPage'])->name('auth.facebook.link');
-    Route::post('/facebook/link/password', [FacebookController::class, 'linkWithPassword'])->name('auth.facebook.link.password');
-    Route::post('/facebook/link/magic', [FacebookController::class, 'sendMagicLink'])->name('auth.facebook.link.send_magic');
-    Route::get('/facebook/link/magic/{token}', [FacebookController::class, 'magicLink'])->name('auth.facebook.link.magic');
-    Route::get('/facebook/link/cancel', [FacebookController::class, 'cancelLink'])->name('auth.facebook.link.cancel');
+    if (config('services.facebook.auth_enabled')) {
+        Route::get('/facebook/redirect', [FacebookController::class, 'redirect'])->name('auth.facebook.redirect');
+        Route::get('/facebook/callback', [FacebookController::class, 'callback'])->name('auth.facebook.callback');
+        Route::get('/facebook/link', [FacebookController::class, 'linkPage'])->name('auth.facebook.link');
+        Route::post('/facebook/link/password', [FacebookController::class, 'linkWithPassword'])->name('auth.facebook.link.password');
+        Route::post('/facebook/link/magic', [FacebookController::class, 'sendMagicLink'])->name('auth.facebook.link.send_magic');
+        Route::get('/facebook/link/magic/{token}', [FacebookController::class, 'magicLink'])->name('auth.facebook.link.magic');
+        Route::get('/facebook/link/cancel', [FacebookController::class, 'cancelLink'])->name('auth.facebook.link.cancel');
+    }
 });
 
 Route::group(['middleware' => ['web', 'authorization'], 'prefix' => config('app.auth_prefix')], function () {

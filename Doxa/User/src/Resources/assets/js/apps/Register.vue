@@ -37,7 +37,7 @@
 
             <BannerError :error="errors.register_failed" />
 
-            <div class="relative my-4">
+            <div v-if="googleAuthEnabled || facebookAuthEnabled" class="relative my-4">
                 <div class="absolute inset-0 flex items-center">
                     <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
@@ -46,8 +46,8 @@
                 </div>
             </div>
 
-            <GoogleAuthButton />
-            <FacebookAuthButton />
+            <GoogleAuthButton v-if="googleAuthEnabled" />
+            <FacebookAuthButton v-if="facebookAuthEnabled" />
         </div>
 
         <!------------ FOOTER -------------->
@@ -77,7 +77,11 @@ import GoogleAuthButton from "./components/GoogleAuthButton.vue";
 import FacebookAuthButton from "./components/FacebookAuthButton.vue";
 
 export default {
-    props: ['roles'],
+    props: {
+        roles: { default: null },
+        googleAuthEnabled: { type: Boolean, default: false },
+        facebookAuthEnabled: { type: Boolean, default: false },
+    },
     data() {
         return {
             form_data: {

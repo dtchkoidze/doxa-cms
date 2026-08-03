@@ -18,6 +18,11 @@ class SocialAuthService
 {
     public const MAGIC_TTL_MINUTES = 15;
 
+    public static function isAuthEnabled(string $provider): bool
+    {
+        return (bool) config("services.{$provider}.auth_enabled");
+    }
+
     /**
      * @return array<string, array<string, mixed>>
      */
@@ -67,6 +72,10 @@ class SocialAuthService
      */
     public function handleSocialUser(SocialiteUser $socialUser, string $providerName): array
     {
+        if (!self::isAuthEnabled($providerName)) {
+            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
+        }
+
         $provider = $this->provider($providerName);
         $idColumn = $provider['id_column'];
         $socialId = (string) $socialUser->getId();
@@ -254,6 +263,10 @@ class SocialAuthService
      */
     public function linkWithPassword(string $password, string $providerName): array
     {
+        if (!self::isAuthEnabled($providerName)) {
+            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
+        }
+
         $provider = $this->provider($providerName);
         $idColumn = $provider['id_column'];
         $pending = $this->getPending($providerName);
@@ -288,6 +301,10 @@ class SocialAuthService
      */
     public function sendMagicLink(string $providerName): array
     {
+        if (!self::isAuthEnabled($providerName)) {
+            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
+        }
+
         $provider = $this->provider($providerName);
         $idColumn = $provider['id_column'];
         $pending = $this->getPending($providerName);
@@ -342,6 +359,9 @@ class SocialAuthService
         $providerName = null;
 
         foreach ($this->providers() as $name => $provider) {
+            if (!self::isAuthEnabled($name)) {
+                continue;
+            }
             $payload = Cache::pull($provider['magic_cache_prefix'] . $token);
             if ($payload) {
                 $providerName = $name;

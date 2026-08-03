@@ -41,17 +41,21 @@ ALTER TABLE `users`
 ### `.env`
 
 ```env
+GOOGLE_AUTH_ENABLED=true
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=${APP_URL}/auth/google/callback
 ```
 
-Важно: имя переменной — **`GOOGLE_REDIRECT_URI`**, не `GOOGLE_CALLBACK_URL`.
+Важно: без `GOOGLE_AUTH_ENABLED=true` Google auth **выключен** (роуты не регистрируются, кнопок нет).
+
+Важно: имя переменной redirect — **`GOOGLE_REDIRECT_URI`**, не `GOOGLE_CALLBACK_URL`.
 
 ### `config/services.php`
 
 ```php
 'google' => [
+    'auth_enabled' => filter_var(env('GOOGLE_AUTH_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
     'client_id' => env('GOOGLE_CLIENT_ID'),
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect' => env('GOOGLE_REDIRECT_URI'),

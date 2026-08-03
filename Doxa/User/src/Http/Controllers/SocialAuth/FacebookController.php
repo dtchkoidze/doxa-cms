@@ -19,6 +19,8 @@ class FacebookController extends Controller
 
     public function redirect()
     {
+        $this->ensureEnabled();
+
         return Socialite::driver('facebook')
             ->scopes(['email', 'public_profile'])
             ->redirect();
@@ -26,6 +28,8 @@ class FacebookController extends Controller
 
     public function callback()
     {
+        $this->ensureEnabled();
+
         try {
             $facebookUser = Socialite::driver('facebook')->user();
         } catch (\Throwable $e) {
@@ -40,6 +44,8 @@ class FacebookController extends Controller
 
     public function linkPage()
     {
+        $this->ensureEnabled();
+
         $pending = $this->socialAuth->getPending(self::PROVIDER);
         if (!$pending) {
             return redirect()->route('auth.login')->with('error', 'Session expired. Please sign in with Facebook again.');
@@ -56,6 +62,8 @@ class FacebookController extends Controller
 
     public function linkWithPassword()
     {
+        $this->ensureEnabled();
+
         $validator = Validator::make(request()->all(), [
             'password' => 'required|string',
         ]);
@@ -74,6 +82,8 @@ class FacebookController extends Controller
 
     public function sendMagicLink()
     {
+        $this->ensureEnabled();
+
         $result = $this->socialAuth->sendMagicLink(self::PROVIDER);
 
         return $this->jsonRespond($result);
@@ -81,6 +91,8 @@ class FacebookController extends Controller
 
     public function magicLink(string $token)
     {
+        $this->ensureEnabled();
+
         $result = $this->socialAuth->linkWithMagicToken($token);
 
         return $this->respond($result);
@@ -88,8 +100,17 @@ class FacebookController extends Controller
 
     public function cancelLink()
     {
+        $this->ensureEnabled();
+
         $this->socialAuth->clearPending(self::PROVIDER);
         return redirect()->route('auth.login');
+    }
+
+    protected function ensureEnabled(): void
+    {
+        if (!SocialAuthService::isAuthEnabled(self::PROVIDER)) {
+            abort(404);
+        }
     }
 
     protected function respond(array $result)

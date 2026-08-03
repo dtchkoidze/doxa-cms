@@ -14,15 +14,19 @@ OAuth-вход через Facebook в `Doxa/User`. Общая логика с Go
 ### `.env`
 
 ```env
+FACEBOOK_AUTH_ENABLED=true
 FACEBOOK_CLIENT_ID=...
 FACEBOOK_CLIENT_SECRET=...
 FACEBOOK_REDIRECT_URI=${APP_URL}/auth/facebook/callback
 ```
 
+Без `FACEBOOK_AUTH_ENABLED=true` Facebook auth **выключен**.
+
 Для локалки:
 
 ```env
 APP_URL=http://localhost
+FACEBOOK_AUTH_ENABLED=true
 FACEBOOK_REDIRECT_URI=http://localhost/auth/facebook/callback
 ```
 
@@ -30,6 +34,7 @@ FACEBOOK_REDIRECT_URI=http://localhost/auth/facebook/callback
 
 ```php
 'facebook' => [
+    'auth_enabled' => filter_var(env('FACEBOOK_AUTH_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
     'client_id' => env('FACEBOOK_CLIENT_ID'),
     'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
     'redirect' => env('FACEBOOK_REDIRECT_URI'),

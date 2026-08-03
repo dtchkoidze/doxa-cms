@@ -53,7 +53,7 @@
             <!------------ ERROR -------------->
             <BannerError :error="errors.login_failed" />
 
-            <div class="relative my-4">
+            <div v-if="googleAuthEnabled || facebookAuthEnabled" class="relative my-4">
                 <div class="absolute inset-0 flex items-center">
                     <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
@@ -62,8 +62,8 @@
                 </div>
             </div>
 
-            <GoogleAuthButton />
-            <FacebookAuthButton />
+            <GoogleAuthButton v-if="googleAuthEnabled" />
+            <FacebookAuthButton v-if="facebookAuthEnabled" />
 
             <div class="flex items-center justify-end">
                 <a class="text-sm underline hover:no-underline" href="/auth/recovery">Forgot Password?</a>
@@ -100,6 +100,10 @@ import GoogleAuthButton from "./components/GoogleAuthButton.vue";
 import FacebookAuthButton from "./components/FacebookAuthButton.vue";
 
 export default {
+    props: {
+        googleAuthEnabled: { type: Boolean, default: false },
+        facebookAuthEnabled: { type: Boolean, default: false },
+    },
     data() {
         return {
             form_data: {
