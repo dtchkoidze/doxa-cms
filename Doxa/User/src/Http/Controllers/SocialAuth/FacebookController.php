@@ -9,9 +9,9 @@ use Doxa\User\Libraries\Registration as REG;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Socialite\Facades\Socialite;
 
-class GoogleController extends Controller
+class FacebookController extends Controller
 {
-    private const PROVIDER = 'google';
+    private const PROVIDER = 'facebook';
 
     public function __construct(
         private SocialAuthService $socialAuth
@@ -19,22 +19,21 @@ class GoogleController extends Controller
 
     public function redirect()
     {
-        return Socialite::driver('google')
-            ->scopes(['openid', 'profile', 'email'])
-            ->with(['prompt' => 'select_account'])
+        return Socialite::driver('facebook')
+            ->scopes(['email', 'public_profile'])
             ->redirect();
     }
 
     public function callback()
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            $facebookUser = Socialite::driver('facebook')->user();
         } catch (\Throwable $e) {
-            Clog::write('auth_google', 'Google callback failed: ' . $e->getMessage(), Clog::ERROR);
-            return redirect()->route('auth.login')->with('error', 'Google sign-in failed. Please try again.');
+            Clog::write('auth_facebook', 'Facebook callback failed: ' . $e->getMessage(), Clog::ERROR);
+            return redirect()->route('auth.login')->with('error', 'Facebook sign-in failed. Please try again.');
         }
 
-        $result = $this->socialAuth->handleGoogleUser($googleUser);
+        $result = $this->socialAuth->handleFacebookUser($facebookUser);
 
         return $this->respond($result);
     }
@@ -43,15 +42,14 @@ class GoogleController extends Controller
     {
         $pending = $this->socialAuth->getPending(self::PROVIDER);
         if (!$pending) {
-            return redirect()->route('auth.login')->with('error', 'Session expired. Please sign in with Google again.');
+            return redirect()->route('auth.login')->with('error', 'Session expired. Please sign in with Facebook again.');
         }
 
-        // Keep wrapper consistent with other auth pages (custom_auth.wrapper / mode cookie)
         REG::init();
 
-        return view('user::auth.google-link', [
+        return view('user::auth.facebook-link', [
             'wrapper' => REG::authWrapper(),
-            'title' => 'Link Google account',
+            'title' => 'Link Facebook account',
             'email' => $pending['email'] ?? '',
         ]);
     }

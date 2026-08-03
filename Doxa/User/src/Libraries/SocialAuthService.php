@@ -11,110 +11,193 @@ use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Doxa\Core\Libraries\Logging\Clog;
 use Doxa\User\Libraries\Registration as REG;
+use Doxa\User\Mail\FacebookLinkEmail;
 use Doxa\User\Mail\GoogleLinkEmail;
 
 class SocialAuthService
 {
-    public const LOG = 'auth_google';
-
-    public const PENDING_SESSION_KEY = 'google_auth_pending';
-
-    public const MAGIC_CACHE_PREFIX = 'google_link:';
-
     public const MAGIC_TTL_MINUTES = 15;
 
     /**
-     * Handle Socialite user after Google callback.
+     * @return array<string, array<string, mixed>>
+     */
+    protected function providers(): array
+    {
+        return [
+            'google' => [
+                'id_column' => 'google_id',
+                'log' => 'auth_google',
+                'pending_session_key' => 'google_auth_pending',
+                'magic_cache_prefix' => 'google_link:',
+                'link_route' => 'auth.google.link',
+                'magic_route' => 'auth.google.link.magic',
+                'mail' => GoogleLinkEmail::class,
+                'label' => 'Google',
+            ],
+            'facebook' => [
+                'id_column' => 'facebook_id',
+                'log' => 'auth_facebook',
+                'pending_session_key' => 'facebook_auth_pending',
+                'magic_cache_prefix' => 'facebook_link:',
+                'link_route' => 'auth.facebook.link',
+                'magic_route' => 'auth.facebook.link.magic',
+                'mail' => FacebookLinkEmail::class,
+                'label' => 'Facebook',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function provider(string $name): array
+    {
+        $providers = $this->providers();
+        if (!isset($providers[$name])) {
+            throw new \InvalidArgumentException('Unknown social auth provider: ' . $name);
+        }
+
+        return $providers[$name];
+    }
+
+    /**
+     * Handle Socialite user after OAuth callback.
      *
+     * @return array{action: string, url?: string, message?: string}
+     */
+    public function handleSocialUser(SocialiteUser $socialUser, string $providerName): array
+    {
+        $provider = $this->provider($providerName);
+        $idColumn = $provider['id_column'];
+        $socialId = (string) $socialUser->getId();
+
+        if ($socialId === '') {
+            return ['action' => 'error', 'message' => $provider['label'] . ' account id is missing.'];
+        }
+
+        // Email is optional for social auth (Facebook often has none).
+        $email = strtolower(trim((string) $socialUser->getEmail()));
+        if ($email === '') {
+            $email = null;
+        }
+
+        $bySocial = User::where($idColumn, $socialId)->first();
+        if ($bySocial) {
+            return $this->loginExisting($bySocial, $provider);
+        }
+
+        // Link flow only when provider gave a verified/usable email that already exists.
+        if ($email !== null) {
+            if ($providerName === 'google') {
+                $verified = $socialUser->user['email_verified']
+                    ?? $socialUser->user['verified_email']
+                    ?? true;
+
+                if (!$verified) {
+                    // Unverified email must not be used for matching/linking —
+                    // create a social-only account instead.
+                    $email = null;
+                }
+            }
+        }
+
+        if ($email !== null) {
+            $byEmail = User::where('email', $email)->first();
+            if ($byEmail) {
+                $existingSocialId = (string) ($byEmail->{$idColumn} ?? '');
+
+                if ($existingSocialId !== '' && $existingSocialId !== $socialId) {
+                    return [
+                        'action' => 'error',
+                        'message' => 'This email is linked to another ' . $provider['label'] . ' account.',
+                    ];
+                }
+
+                if ($existingSocialId !== '' && $existingSocialId === $socialId) {
+                    return $this->loginExisting($byEmail, $provider);
+                }
+
+                $this->storePending($providerName, [
+                    'user_id' => $byEmail->id,
+                    'email' => $email,
+                    $idColumn => $socialId,
+                    'name' => $socialUser->getName(),
+                    'avatar' => $socialUser->getAvatar(),
+                ]);
+
+                return [
+                    'action' => 'link',
+                    'url' => route($provider['link_route']),
+                ];
+            }
+        }
+
+        $user = $this->createUserFromSocial($email, $socialId, $socialUser->getName(), $provider);
+        return $this->loginExisting($user, $provider);
+    }
+
+    /**
      * @return array{action: string, url?: string, message?: string}
      */
     public function handleGoogleUser(SocialiteUser $googleUser): array
     {
-        $email = strtolower(trim((string) $googleUser->getEmail()));
-        $googleId = (string) $googleUser->getId();
-
-        if ($email === '' || $googleId === '') {
-            return ['action' => 'error', 'message' => 'Google account did not provide email.'];
-        }
-
-        // Socialite maps user.email_verified / user['email_verified'] depending on driver version
-        $verified = $googleUser->user['email_verified']
-            ?? $googleUser->user['verified_email']
-            ?? true;
-
-        if (!$verified) {
-            return ['action' => 'error', 'message' => 'Google email is not verified.'];
-        }
-
-        $byGoogle = User::where('google_id', $googleId)->first();
-        if ($byGoogle) {
-            return $this->loginExisting($byGoogle);
-        }
-
-        $byEmail = User::where('email', $email)->first();
-        if ($byEmail) {
-            if (!empty($byEmail->google_id) && $byEmail->google_id !== $googleId) {
-                return ['action' => 'error', 'message' => 'This email is linked to another Google account.'];
-            }
-
-            // Already linked somehow — treat as login
-            if (!empty($byEmail->google_id) && $byEmail->google_id === $googleId) {
-                return $this->loginExisting($byEmail);
-            }
-
-            // Need explicit link confirmation (password or magic link)
-            $this->storePending([
-                'user_id' => $byEmail->id,
-                'email' => $email,
-                'google_id' => $googleId,
-                'name' => $googleUser->getName(),
-                'avatar' => $googleUser->getAvatar(),
-            ]);
-
-            return [
-                'action' => 'link',
-                'url' => route('auth.google.link'),
-            ];
-        }
-
-        $user = $this->createUserFromGoogle($email, $googleId, $googleUser->getName());
-        return $this->loginExisting($user);
+        return $this->handleSocialUser($googleUser, 'google');
     }
 
-    protected function createUserFromGoogle(string $email, string $googleId, ?string $name): User
+    /**
+     * @return array{action: string, url?: string, message?: string}
+     */
+    public function handleFacebookUser(SocialiteUser $facebookUser): array
     {
+        return $this->handleSocialUser($facebookUser, 'facebook');
+    }
+
+    /**
+     * @param array<string, mixed> $provider
+     */
+    protected function createUserFromSocial(?string $email, string $socialId, ?string $name, array $provider): User
+    {
+        $idColumn = $provider['id_column'];
+        $displayName = trim((string) $name);
+        if ($displayName === '') {
+            $displayName = $email ? Str::before($email, '@') : ($provider['label'] . ' user');
+        }
+
         $user = User::create([
             'email' => $email,
-            'name' => $name ?: Str::before($email, '@'),
+            'name' => $displayName,
             'admin' => 0,
             'active' => 1,
             'status' => REG::READY_STATUS,
-            // Unusable random password — login via Google (or set via recovery later)
             'password' => Hash::make(Str::random(64)),
             'v_hash' => Str::random(32),
             'secret' => Hash::make(Str::random(40)),
         ]);
 
-        // Host User model may not have google_id in $fillable
-        $user->forceFill(['google_id' => $googleId])->save();
+        $user->forceFill([$idColumn => $socialId])->save();
 
         if (function_exists('mr')) {
             try {
                 mr('user_profile')->create($user, 0);
             } catch (\Throwable $e) {
-                Clog::write(self::LOG, 'user_profile create skipped: ' . $e->getMessage(), Clog::WARNING);
+                Clog::write($provider['log'], 'user_profile create skipped: ' . $e->getMessage(), Clog::WARNING);
             }
         }
 
-        Clog::write(self::LOG, 'Created user from Google: ' . $email, Clog::NOTICE);
+        Clog::write(
+            $provider['log'],
+            'Created user from ' . $provider['label'] . ': ' . ($email ?: ('no email, ' . $idColumn . '=' . $socialId)),
+            Clog::NOTICE
+        );
 
         return $user;
     }
 
     /**
+     * @param array<string, mixed> $provider
      * @return array{action: string, url?: string, message?: string}
      */
-    protected function loginExisting(User $user): array
+    protected function loginExisting(User $user, array $provider): array
     {
         if (method_exists($user, 'isSuspended') && $user->isSuspended()) {
             return ['action' => 'redirect', 'url' => route('auth.suspended')];
@@ -129,7 +212,7 @@ class SocialAuthService
 
         Auth::login($user, true);
         request()->session()->regenerate();
-        $this->clearPending();
+        $this->clearPending($this->providerNameFromConfig($provider));
 
         REG::init();
         REG::setUserFromAuth();
@@ -140,37 +223,48 @@ class SocialAuthService
         ];
     }
 
-    public function storePending(array $data): void
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function storePending(string $providerName, array $data): void
     {
-        session([self::PENDING_SESSION_KEY => $data]);
-    }
-
-    public function getPending(): ?array
-    {
-        $data = session(self::PENDING_SESSION_KEY);
-        return is_array($data) ? $data : null;
-    }
-
-    public function clearPending(): void
-    {
-        session()->forget(self::PENDING_SESSION_KEY);
+        $provider = $this->provider($providerName);
+        session([$provider['pending_session_key'] => $data]);
     }
 
     /**
-     * Link Google using account password.
-     *
+     * @return array<string, mixed>|null
+     */
+    public function getPending(string $providerName): ?array
+    {
+        $provider = $this->provider($providerName);
+        $data = session($provider['pending_session_key']);
+
+        return is_array($data) ? $data : null;
+    }
+
+    public function clearPending(string $providerName): void
+    {
+        $provider = $this->provider($providerName);
+        session()->forget($provider['pending_session_key']);
+    }
+
+    /**
      * @return array{action: string, url?: string, message?: string, errors?: array}
      */
-    public function linkWithPassword(string $password): array
+    public function linkWithPassword(string $password, string $providerName): array
     {
-        $pending = $this->getPending();
+        $provider = $this->provider($providerName);
+        $idColumn = $provider['id_column'];
+        $pending = $this->getPending($providerName);
+
         if (!$pending) {
-            return ['action' => 'error', 'message' => 'Link session expired. Try Google sign-in again.'];
+            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
         }
 
         $user = User::find($pending['user_id']);
         if (!$user) {
-            $this->clearPending();
+            $this->clearPending($providerName);
             return ['action' => 'error', 'message' => 'User not found.'];
         }
 
@@ -181,43 +275,57 @@ class SocialAuthService
             ];
         }
 
-        return $this->completeLink($user, $pending['google_id']);
+        $socialId = (string) ($pending[$idColumn] ?? '');
+        if ($socialId === '') {
+            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+        }
+
+        return $this->completeLink($user, $socialId, $providerName);
     }
 
     /**
-     * Send magic link to existing account email to confirm Google link.
-     *
      * @return array{action: string, message?: string}
      */
-    public function sendMagicLink(): array
+    public function sendMagicLink(string $providerName): array
     {
-        $pending = $this->getPending();
+        $provider = $this->provider($providerName);
+        $idColumn = $provider['id_column'];
+        $pending = $this->getPending($providerName);
+
         if (!$pending) {
-            return ['action' => 'error', 'message' => 'Link session expired. Try Google sign-in again.'];
+            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
         }
 
         $user = User::find($pending['user_id']);
         if (!$user) {
-            $this->clearPending();
+            $this->clearPending($providerName);
             return ['action' => 'error', 'message' => 'User not found.'];
         }
 
+        $socialId = (string) ($pending[$idColumn] ?? '');
+        if ($socialId === '') {
+            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+        }
+
         $token = Str::random(64);
-        Cache::put(self::MAGIC_CACHE_PREFIX . $token, [
+        Cache::put($provider['magic_cache_prefix'] . $token, [
             'user_id' => $user->id,
-            'google_id' => $pending['google_id'],
+            'social_id' => $socialId,
             'email' => $pending['email'],
+            'provider' => $providerName,
         ], now()->addMinutes(self::MAGIC_TTL_MINUTES));
 
-        $url = route('auth.google.link.magic', ['token' => $token]);
+        $url = route($provider['magic_route'], ['token' => $token]);
+        $mailClass = $provider['mail'];
 
-        Mail::to($user->email)->send(new GoogleLinkEmail([
+        Mail::to($user->email)->send(new $mailClass([
             'email' => $user->email,
             'link' => $url,
             'expires_minutes' => self::MAGIC_TTL_MINUTES,
+            'provider_label' => $provider['label'],
         ]));
 
-        Clog::write(self::LOG, 'Magic link sent to ' . $user->email, Clog::NOTICE);
+        Clog::write($provider['log'], 'Magic link sent to ' . $user->email, Clog::NOTICE);
 
         return [
             'action' => 'ok',
@@ -226,47 +334,74 @@ class SocialAuthService
     }
 
     /**
-     * Complete link via magic token from email.
-     *
      * @return array{action: string, url?: string, message?: string}
      */
     public function linkWithMagicToken(string $token): array
     {
-        $payload = Cache::pull(self::MAGIC_CACHE_PREFIX . $token);
-        if (!$payload || empty($payload['user_id']) || empty($payload['google_id'])) {
+        $payload = null;
+        $providerName = null;
+
+        foreach ($this->providers() as $name => $provider) {
+            $payload = Cache::pull($provider['magic_cache_prefix'] . $token);
+            if ($payload) {
+                $providerName = $name;
+                break;
+            }
+        }
+
+        if (!$payload || empty($payload['user_id']) || empty($payload['social_id']) || !$providerName) {
             return ['action' => 'error', 'message' => 'Link is invalid or expired.'];
         }
 
+        $provider = $this->provider($providerName);
         $user = User::find($payload['user_id']);
         if (!$user) {
             return ['action' => 'error', 'message' => 'User not found.'];
         }
 
-        // Refresh pending so completeLink can clear it
-        $this->storePending([
+        $this->storePending($providerName, [
             'user_id' => $user->id,
             'email' => $user->email,
-            'google_id' => $payload['google_id'],
+            $provider['id_column'] => $payload['social_id'],
         ]);
 
-        return $this->completeLink($user, $payload['google_id']);
+        return $this->completeLink($user, (string) $payload['social_id'], $providerName);
     }
 
     /**
      * @return array{action: string, url?: string, message?: string}
      */
-    protected function completeLink(User $user, string $googleId): array
+    protected function completeLink(User $user, string $socialId, string $providerName): array
     {
-        $taken = User::where('google_id', $googleId)->where('id', '!=', $user->id)->exists();
+        $provider = $this->provider($providerName);
+        $idColumn = $provider['id_column'];
+
+        $taken = User::where($idColumn, $socialId)->where('id', '!=', $user->id)->exists();
         if ($taken) {
-            $this->clearPending();
-            return ['action' => 'error', 'message' => 'This Google account is already linked to another user.'];
+            $this->clearPending($providerName);
+            return [
+                'action' => 'error',
+                'message' => 'This ' . $provider['label'] . ' account is already linked to another user.',
+            ];
         }
 
-        // Host User model may not have google_id in $fillable
-        $user->forceFill(['google_id' => $googleId])->save();
-        Clog::write(self::LOG, 'Linked Google to user ' . $user->id, Clog::NOTICE);
+        $user->forceFill([$idColumn => $socialId])->save();
+        Clog::write($provider['log'], 'Linked ' . $provider['label'] . ' to user ' . $user->id, Clog::NOTICE);
 
-        return $this->loginExisting($user->fresh());
+        return $this->loginExisting($user->fresh(), $provider);
+    }
+
+    /**
+     * @param array<string, mixed> $provider
+     */
+    protected function providerNameFromConfig(array $provider): string
+    {
+        foreach ($this->providers() as $name => $config) {
+            if ($config['pending_session_key'] === $provider['pending_session_key']) {
+                return $name;
+            }
+        }
+
+        return 'google';
     }
 }
