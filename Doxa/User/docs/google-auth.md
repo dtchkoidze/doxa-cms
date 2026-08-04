@@ -127,7 +127,7 @@ php artisan config:clear
    - `email` из Google, если есть; иначе `NULL`
    - `name` из Google или fallback
    - `active = 1`, `status = READY`, `admin = 0`
-   - случайный `password`
+   - `password` = `NULL` (вход через соцсеть или recovery)
    - `user_profile` через `mr('user_profile')->create($user, 0)`
 4. `Auth::login()` → редирект.
 

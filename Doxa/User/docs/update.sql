@@ -1,6 +1,9 @@
--- Social auth: email optional (Google/Facebook may omit it)
+-- Social auth: email and password optional for social-only users
 ALTER TABLE `users`
   MODIFY COLUMN `email` VARCHAR(255) NULL;
+
+ALTER TABLE `users`
+  MODIFY COLUMN `password` VARCHAR(255) NULL;
 
 -- If google_id already exists, skip this block
 ALTER TABLE `users`

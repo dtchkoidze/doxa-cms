@@ -178,7 +178,7 @@ class SocialAuthService
             'admin' => 0,
             'active' => 1,
             'status' => REG::READY_STATUS,
-            'password' => Hash::make(Str::random(64)),
+            'password' => null,
             'v_hash' => Str::random(32),
             'secret' => Hash::make(Str::random(40)),
         ]);

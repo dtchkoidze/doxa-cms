@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Doxa\User\Http\Controllers\AddEmailController;
 use Doxa\User\Http\Controllers\Registration\RegistrationController;
 use Doxa\User\Http\Controllers\Registration\ApiController as RegistrationApiController;
 use Doxa\User\Http\Controllers\SocialAuth\GoogleController;
@@ -82,4 +83,18 @@ Route::group(['middleware' => ['web', 'authorization'], 'prefix' => config('app.
 
     });
 
+});
+
+// Add email — залогиненный пользователь, без authorization (тот middleware для pending-регистрации)
+Route::group([
+    'middleware' => array_merge(
+        ['auth'],
+        config('user.add_email_middleware', [])
+    ),
+    'prefix' => config('app.auth_prefix'),
+], function () {
+    Route::post('/api/add-email/request', [AddEmailController::class, 'requestVerification'])
+        ->name('auth.api.add_email.request');
+    Route::post('/api/add-email/confirm', [AddEmailController::class, 'confirm'])
+        ->name('auth.api.add_email.confirm');
 });
