@@ -113,6 +113,23 @@ if (!function_exists('chlo')) {
     }
 }
 
+if (!function_exists('current_locale_prefix')) {
+    /**
+     * URL locale prefix: "" when current locale has without_prefix, otherwise "/{code}".
+     */
+    function current_locale_prefix(): string
+    {
+        $locale = Chlo::getCurrentLocale();
+        if ($locale && !empty($locale->without_prefix)) {
+            return '';
+        }
+
+        $code = $locale->code ?? app()->getLocale();
+
+        return $code ? '/' . $code : '';
+    }
+}
+
 if (!function_exists('get_view')) {
     function get_view($name)
     {

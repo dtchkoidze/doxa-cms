@@ -248,6 +248,42 @@ class Chlo
         return 0;
     }
 
+    /**
+     * Current locale object (or default_locale fallback).
+     */
+    public static function getCurrentLocale()
+    {
+        if (is_null(self::$instance)) {
+            self::init();
+        }
+        if (self::$instance->locale) {
+            return self::$instance->locale;
+        }
+        if (!empty(self::$instance->default_locale)) {
+            return self::$instance->default_locale;
+        }
+        return null;
+    }
+
+    /**
+     * Whether locale uses URLs without /{code} prefix.
+     * null = locale not found; true/false = without_prefix flag.
+     */
+    public static function isLocaleWithoutPrefix(string $code): ?bool
+    {
+        if (is_null(self::$instance)) {
+            self::init();
+        }
+
+        foreach (self::$instance->locales as $locale) {
+            if ($locale->code === $code) {
+                return !empty($locale->without_prefix);
+            }
+        }
+
+        return null;
+    }
+
     public static function getCurrentLocaleCode()
     {
         if (self::$instance === null) {

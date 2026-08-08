@@ -15,6 +15,9 @@ trait Language
 
     protected ?string $routePrefix;
 
+    /** @var object|null Locale marked without_prefix (e.g. ka) */
+    protected $locale_without_prefix = null;
+
     protected $errors = [];
 
     protected $config;
@@ -36,7 +39,6 @@ trait Language
             Clog::write($this->log_name, 'channel not found');
             Clog::write('critical', 'channel not found');
             $this->setError('channel not found');
-            //die('Current channel not found. Please, add current host to channels table.');
             return false;
         }
 
@@ -49,13 +51,16 @@ trait Language
 
         $this->locales = collect($this->channel->locales);
 
+        $this->locale_without_prefix = $this->locales->first(function ($locale) {
+            return !empty($locale->without_prefix);
+        });
+
         $this->getDefaultLocale();
 
         $this->routePrefix = request()->segment(1);
 
         if ($this->routePrefix) {
             if ($this->locales->doesntContain('code', $this->routePrefix)) {
-                // Changed this, routePrefix was being assigned an empty string.
                 $this->routePrefix = '';
             }
         }
@@ -70,7 +75,10 @@ trait Language
             $this->defaultLocale = $this->getPreferredLocale();
         }
         if (!$this->defaultLocale) {
-            $this->defaultLocale = $this->locales->has('default', 1);
+            $default = $this->locales->first(function ($locale) {
+                return !empty($locale->default);
+            });
+            $this->defaultLocale = $default ? $default->code : ($this->locales->first()->code ?? null);
         }
     }
 
@@ -95,6 +103,25 @@ trait Language
         return $path;
     }
 
+    /**
+     * Drop the first URL segment (locale or alias) for without_prefix locales.
+     */
+    protected function buildPathWithoutLocalePrefix()
+    {
+        $segments = request()->segments();
+        if (!empty($segments)) {
+            array_shift($segments);
+        }
+
+        $path = '/' . implode('/', $segments);
+
+        if ($query = request()->getQueryString()) {
+            $path .= '?' . $query;
+        }
+
+        return $path;
+    }
+
     protected function buildLngPath($locale = '')
     {
         $redirectPath = '';
@@ -108,7 +135,6 @@ trait Language
             array_shift($segments);
         }
 
-        // Added lines 96-100 to check if the locale is provided but isn't in the current channels locale list. If so, remove from url
         $locales = core()->getCurrentChannel()->locales->pluck('code')->toArray();
 
         if (isset($segments[0]) && !in_array($segments[0], $locales)) {
