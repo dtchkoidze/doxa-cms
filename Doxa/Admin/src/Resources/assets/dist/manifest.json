@@ -24,7 +24,7 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2"
   },
   "src/Resources/assets/css/admin.css": {
-    "file": "assets/admin-DfLdtcOa.css",
+    "file": "assets/admin-B4FiKf1-.css",
     "src": "src/Resources/assets/css/admin.css",
     "isEntry": true
   },
@@ -33,7 +33,7 @@
     "src": "src/Resources/assets/images/user-avatar-32.png"
   },
   "src/Resources/assets/js/admin.js": {
-    "file": "assets/admin-aSdWchZB.js",
+    "file": "assets/admin-DLZpj6YK.js",
     "name": "admin",
     "src": "src/Resources/assets/js/admin.js",
     "isEntry": true,
@@ -53,7 +53,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/checkbox.vue": {
-    "file": "assets/checkbox-ClpK6CJw.js",
+    "file": "assets/checkbox-D0jlp643.js",
     "name": "checkbox",
     "src": "src/Resources/assets/js/components/configuration/fields/checkbox.vue",
     "isDynamicEntry": true,
@@ -62,7 +62,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/datetime.vue": {
-    "file": "assets/datetime-jY3OdUqP.js",
+    "file": "assets/datetime-BnLeI4F-.js",
     "name": "datetime",
     "src": "src/Resources/assets/js/components/configuration/fields/datetime.vue",
     "isDynamicEntry": true,
@@ -71,7 +71,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/img.vue": {
-    "file": "assets/img-B0cJHbmc.js",
+    "file": "assets/img-CVYpstFE.js",
     "name": "img",
     "src": "src/Resources/assets/js/components/configuration/fields/img.vue",
     "isDynamicEntry": true,
@@ -80,7 +80,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/input.vue": {
-    "file": "assets/input-yx9ojlAi.js",
+    "file": "assets/input-DHuk-HD7.js",
     "name": "input",
     "src": "src/Resources/assets/js/components/configuration/fields/input.vue",
     "isDynamicEntry": true,
@@ -89,7 +89,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/textarea.vue": {
-    "file": "assets/textarea-BYNWLQa1.js",
+    "file": "assets/textarea-C9LWi9mB.js",
     "name": "textarea",
     "src": "src/Resources/assets/js/components/configuration/fields/textarea.vue",
     "isDynamicEntry": true,
@@ -98,7 +98,7 @@
     ]
   },
   "src/Resources/assets/js/components/configuration/fields/tiny.vue": {
-    "file": "assets/tiny-DP0ZLqu2.js",
+    "file": "assets/tiny-pTlmbEem.js",
     "name": "tiny",
     "src": "src/Resources/assets/js/components/configuration/fields/tiny.vue",
     "isDynamicEntry": true,

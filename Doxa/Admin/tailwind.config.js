@@ -4,8 +4,12 @@ import { config } from "dotenv";
 config({ path: "../../../.env" });
 
 let admin_modules_paths = "Modules/**/*.php";
-let project_modules_paths = "../../Projects/" + process.env.PROJECT_NAME + "/src/Modules/**/*.php";
-let modules_paths = [admin_modules_paths, project_modules_paths];
+// Legacy monorepo layout + current Laravel apps (sibling under htdocs): app/Modules
+let project_modules_paths = [
+    "../../Projects/" + process.env.PROJECT_NAME + "/src/Modules/**/*.php",
+    process.env.PROJECT_APP_MODULES || "../../../gpg.loc/app/Modules/**/*.php",
+];
+let modules_paths = [admin_modules_paths, ...project_modules_paths];
 // console.log(modules_paths);
 
 export default {

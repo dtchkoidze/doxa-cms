@@ -322,7 +322,7 @@ class AdminServiceProvider extends ServiceProvider
 
     private function getPathes()
     {
-        $this->project_folder = 'packages/Projects/' . config('app.project_name') . '/src';
+        $this->project_folder = 'app';
         $this->doxa_folder = 'packages/Doxa';
         $this->project_config_path = base_path($this->project_folder . '/config/packages.php');
     }

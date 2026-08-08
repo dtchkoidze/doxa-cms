@@ -82,7 +82,7 @@ class OmniTranslator
         //dd($args);
 
         if(!$value){
-            $path = 'doxa.package.'.$module.'.translations.en.'.implode('.', $args);
+            $path = 'doxa.modules.'.$module.'.translations.en.'.implode('.', $args);
             //Clog::write('omniTranslator','moduleTrans() 002 $path: '.$path);
             $value = config($path);
             //Clog::write('omniTranslator','002 $value: '.$value);
