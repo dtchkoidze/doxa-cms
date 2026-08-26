@@ -37,6 +37,8 @@ class UserServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__ . '/../../config/onboarding.php', 'onboarding');
+
         //$this->registerBouncer();
 
         $this->publishes([

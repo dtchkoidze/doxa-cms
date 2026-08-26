@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Doxa\Core\Libraries\Logging\Clog;
+use Doxa\User\Libraries\Onboarding;
 use Doxa\User\Libraries\Registration as REG;
 use Doxa\User\Mail\FacebookLinkEmail;
 use Doxa\User\Mail\GoogleLinkEmail;
@@ -79,6 +80,11 @@ class SocialAuthService
         $provider = $this->provider($providerName);
         $idColumn = $provider['id_column'];
         $socialId = (string) $socialUser->getId();
+
+        Clog::write(REG::LOG, 'Onboarding social handleSocialUser', [
+            'provider' => $providerName,
+            'session' => session(Onboarding::SESSION_KEY),
+        ], Clog::NOTICE);
 
         if ($socialId === '') {
             return ['action' => 'error', 'message' => $provider['label'] . ' account id is missing.'];
@@ -185,6 +191,12 @@ class SocialAuthService
 
         $user->forceFill([$idColumn => $socialId])->save();
 
+        Clog::write(REG::LOG, 'Onboarding social createUserFromSocial', [
+            'user_id' => $user->id,
+            'provider' => $provider['label'],
+            'session' => session(Onboarding::SESSION_KEY),
+        ], Clog::NOTICE);
+
         if (function_exists('mr')) {
             try {
                 mr('user_profile')->create($user, 0);
@@ -223,12 +235,25 @@ class SocialAuthService
         request()->session()->regenerate();
         $this->clearPending($this->providerNameFromConfig($provider));
 
+        Clog::write(REG::LOG, 'Onboarding persist after social login', [
+            'user_id' => $user->id,
+            'provider' => $this->providerNameFromConfig($provider),
+        ], Clog::NOTICE);
+
         REG::init();
         REG::setUserFromAuth();
+        REG::persistOnboarding(true, true);
+
+        $url = REG::getSuccessAuthUrl();
+        Clog::write(REG::LOG, 'Onboarding social redirect', [
+            'user_id' => $user->id,
+            'provider' => $this->providerNameFromConfig($provider),
+            'url' => $url,
+        ], Clog::NOTICE);
 
         return [
             'action' => 'redirect',
-            'url' => REG::getSuccessAuthUrl(),
+            'url' => $url,
         ];
     }
 
@@ -407,6 +432,12 @@ class SocialAuthService
 
         $user->forceFill([$idColumn => $socialId])->save();
         Clog::write($provider['log'], 'Linked ' . $provider['label'] . ' to user ' . $user->id, Clog::NOTICE);
+
+        Clog::write(REG::LOG, 'Onboarding social completeLink', [
+            'user_id' => $user->id,
+            'provider' => $providerName,
+            'session' => session(Onboarding::SESSION_KEY),
+        ], Clog::NOTICE);
 
         return $this->loginExisting($user->fresh(), $provider);
     }

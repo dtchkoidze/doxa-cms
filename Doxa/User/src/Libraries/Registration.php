@@ -145,6 +145,9 @@ use Projects\Dusty\Libraries\Partner\Partner;
  * ----------------------------------------------
  * @method static self setUserFromAuth()
  * @method self setUserFromAuth()
+ * ----------------------------------------------
+ * @method static self persistOnboarding()
+ * @method self persistOnboarding()
  *
  */
 class Registration
@@ -459,6 +462,10 @@ class Registration
 
     protected function trySetSuccessUrl()
     {
+        if (Onboarding::hasSuccessUrlQueryKey()) {
+            return;
+        }
+
         if (!empty($this->mode_options['success_url'])) {
             $this->setSuccessAuthUrlCookie($this->mode_options['success_url']);
         } else {
@@ -800,16 +807,73 @@ class Registration
         return false;
     }
 
+    protected function persistOnboarding(bool $clearSession = true, bool $replaceSuccessUrl = false, bool $useSession = true): self
+    {
+        Clog::write(self::LOG, 'Onboarding persistOnboarding', [
+            'user_id' => $this->user ? (int) $this->user->id : null,
+            'clear_session' => $clearSession,
+            'replace_success_url' => $replaceSuccessUrl,
+            'use_session' => $useSession,
+        ], Clog::NOTICE);
+
+        if (!$this->user) {
+            Clog::write(self::LOG, 'Onboarding persistOnboarding skipped (no user)', Clog::NOTICE);
+            return $this;
+        }
+
+        Onboarding::make((int) $this->user->id)->saveToUser($clearSession, $replaceSuccessUrl, $useSession);
+
+        return $this;
+    }
+
     protected function getSuccessAuthUrl()
     {
         Clog::write(self::LOG, 'getSuccessAuthUrl()', Clog::DEBUG);
 
-        $this->success_auth_url = $this->sanitizeSafeRedirectUrl($this->getSuccessAuthUrlCookie());
-        if ($this->success_auth_url) {
-            Clog::write(self::LOG, 'success_auth_url exists in cookie: ' . $this->success_auth_url, Clog::DEBUG);
-            Clog::write(self::LOG, 'METHOD ENDS, $this->success_auth_url: ' . $this->success_auth_url, Clog::DEBUG);
-            return $this->success_auth_url;
+        if (Onboarding::hasSuccessUrlQueryKey()) {
+            if (!$this->user && Auth::check()) {
+                $this->user = Auth::user();
+            }
+            if ($this->user) {
+                $url = Onboarding::make((int) $this->user->id)->successUrl();
+                if ($url !== null) {
+                    $safe = $this->sanitizeSafeRedirectUrl($url);
+                    if ($safe) {
+                        Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl', [
+                            'url' => $safe,
+                            'user_id' => (int) $this->user->id,
+                        ], Clog::NOTICE);
+                        return $safe;
+                    }
+                    Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl unsafe after sanitize', [
+                        'url' => $url,
+                        'user_id' => (int) $this->user->id,
+                    ], Clog::NOTICE);
+                } else {
+                    Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl: no success_url row', [
+                        'user_id' => (int) $this->user->id,
+                    ], Clog::NOTICE);
+                    if (!empty($this->mode_options['success_url'])) {
+                        $fromMode = $this->sanitizeSafeRedirectUrl($this->mode_options['success_url']);
+                        if ($fromMode) {
+                            Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl: mode_options success_url', [
+                                'url' => $fromMode,
+                                'user_id' => (int) $this->user->id,
+                            ], Clog::NOTICE);
+                            return $fromMode;
+                        }
+                    }
+                }
+            } else {
+                Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl: hasSuccessUrlQueryKey but no user', Clog::NOTICE);
+            }
         } else {
+            $this->success_auth_url = $this->sanitizeSafeRedirectUrl($this->getSuccessAuthUrlCookie());
+            if ($this->success_auth_url) {
+                Clog::write(self::LOG, 'success_auth_url exists in cookie: ' . $this->success_auth_url, Clog::DEBUG);
+                Clog::write(self::LOG, 'METHOD ENDS, $this->success_auth_url: ' . $this->success_auth_url, Clog::DEBUG);
+                return $this->success_auth_url;
+            }
             Clog::write(self::LOG, 'success_auth_url NOT exists in cookie', Clog::DEBUG);
         }
 
@@ -1119,6 +1183,8 @@ class Registration
 
         $this->user = User::create($set);
 
+        $this->persistOnboarding(false, false, false);
+
         return $this;
     }
 
@@ -1336,6 +1402,17 @@ class Registration
             Clog::write(self::LOG, 'setSuccessAuthUrlCookie skipped (unsafe): ' . (string) $path, Clog::WARNING);
             return;
         }
+
+        if (Onboarding::hasSuccessUrlQueryKey()) {
+            $queryKey = Onboarding::successQueryKey();
+            Clog::write(self::LOG, 'Onboarding setSuccessAuthUrlCookie -> session', [
+                'query_key' => $queryKey,
+                'value' => $safe,
+            ], Clog::NOTICE);
+            Onboarding::saveToSession([$queryKey => $safe]);
+            return;
+        }
+
         Cookie::queue('success_auth_url', $safe, $this->auth_cookies_expire);
     }
 

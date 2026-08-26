@@ -2,6 +2,14 @@ import axios from "axios";
 window.axios = axios;
 window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 window.axios.defaults.baseURL = window.location.origin;
+
+const pageQuery = Object.fromEntries(new URLSearchParams(window.location.search));
+if (Object.keys(pageQuery).length > 0) {
+    window.axios.interceptors.request.use((config) => {
+        config.params = { ...pageQuery, ...(config.params || {}) };
+        return config;
+    });
+}
 import { createApp } from "vue";
 import Emitter from "./utils/emitter";
 import Login from "./apps/Login.vue";

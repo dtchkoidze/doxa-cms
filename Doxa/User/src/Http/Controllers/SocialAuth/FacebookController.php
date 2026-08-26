@@ -5,9 +5,11 @@ namespace Doxa\User\Http\Controllers\SocialAuth;
 use App\Http\Controllers\Controller;
 use Doxa\Core\Libraries\Logging\Clog;
 use Doxa\User\Libraries\SocialAuthService;
+use Doxa\User\Libraries\Onboarding;
 use Doxa\User\Libraries\Registration as REG;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\FacebookProvider;
 
 class FacebookController extends Controller
 {
@@ -21,7 +23,21 @@ class FacebookController extends Controller
     {
         $this->ensureEnabled();
 
-        return Socialite::driver('facebook')
+        Clog::write(REG::LOG, 'Onboarding Facebook redirect', [
+            'uri' => request()->getRequestUri(),
+            'query' => request()->query(),
+        ], Clog::NOTICE);
+
+        Onboarding::saveRequestToSession();
+
+        Clog::write(REG::LOG, 'Onboarding Facebook redirect session after save', [
+            'session' => session(Onboarding::SESSION_KEY),
+        ], Clog::NOTICE);
+
+        /** @var FacebookProvider $driver */
+        $driver = Socialite::driver('facebook');
+
+        return $driver
             ->scopes(['email', 'public_profile'])
             ->redirect();
     }
@@ -37,7 +53,13 @@ class FacebookController extends Controller
             return redirect()->route('auth.login')->with('error', 'Facebook sign-in failed. Please try again.');
         }
 
+        Clog::write(REG::LOG, 'Onboarding Facebook callback', [
+            'session' => session(Onboarding::SESSION_KEY),
+        ], Clog::NOTICE);
+
         $result = $this->socialAuth->handleFacebookUser($facebookUser);
+
+        Clog::write(REG::LOG, 'Onboarding Facebook callback result', $result, Clog::NOTICE);
 
         return $this->respond($result);
     }

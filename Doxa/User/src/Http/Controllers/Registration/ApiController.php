@@ -42,6 +42,10 @@ class ApiController extends Controller
             Clog::write(REG::LOG, 'Success login!', Clog::DEBUG);
             REG::clearLoginAttempts();
             REG::setUserFromAuth();
+            Clog::write(REG::LOG, 'Onboarding persist after password login', [
+                'user_id' => REG::user()->id,
+            ], Clog::NOTICE);
+            REG::persistOnboarding(true, true);
             $this->userGeo->record(REG::user()->id);
             if (!REG::user()->isActive()) {
                 Auth::logout();
@@ -111,6 +115,10 @@ class ApiController extends Controller
                     Clog::write(REG::LOG, 'User has password pending status, will be changed to verification pending.', Clog::DEBUG);
                     REG::setVerificationdPendingStatus();
                 }
+                Clog::write(REG::LOG, 'Onboarding persist pending register', [
+                    'user_id' => REG::user()->id,
+                ], Clog::NOTICE);
+                REG::persistOnboarding(false, false, false);
                 REG::setAuthCookie('verify');
                 return $this->responceRegistrationInProcess();
             }
