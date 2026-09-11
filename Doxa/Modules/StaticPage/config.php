@@ -14,6 +14,7 @@ return [
             'name' => 'static_pages',
             'fields' => [
                 'url_key' => 'url_key',
+                'landing_body' => 'landing_body',
                 'created_at' => 'created_at',
                 'updated_at' => 'updated_at',
             ],
@@ -28,6 +29,7 @@ return [
                 'meta_title' => 'meta_title',
                 'meta_description' => 'meta_description',
                 'meta_keywords' => 'meta_keywords',
+                'extra' => 'extra',
 
                 'created_at' => 'created_at',
                 'updated_at' => 'updated_at',
@@ -69,6 +71,19 @@ return [
                 'filterable' => true,
                 'sortable' => false,
                 'variation' => true,
+                'control' => 'checkbox',
+                'params' => [
+                    'width' => '50px',
+                    'class' => 'justify-center',
+                ]
+            ],
+            [
+                'index' => 'landing_body',
+                'label' => 'LB',
+                'type' => 'boolean',
+                'searchable' => false,
+                'filterable' => true,
+                'sortable' => false,
                 'control' => 'checkbox',
                 'params' => [
                     'width' => '50px',
@@ -185,6 +200,13 @@ return [
                                 'control' => 'textarea',
                                 'title' => ['static_page', 'edit_form.meta_keywords'],
                             ],
+                            [
+                                'key' => 'extra',
+                                'variation' => true,
+                                'type' => 'text',
+                                'control' => 'textarea',
+                                'title' => 'Extra',
+                            ],
                         ],
                     ],
                 ]
@@ -205,6 +227,12 @@ return [
                                     'max:200',
                                     'regex:/^[a-zA-Z0-9\_\.\-]+$/u'
                                 ]
+                            ],
+                            [
+                                'key' => 'landing_body',
+                                'type' => 'checkbox',
+                                'control' => 'checkbox',
+                                'title' => 'Landing Body',
                             ],
                         ]
                     ],

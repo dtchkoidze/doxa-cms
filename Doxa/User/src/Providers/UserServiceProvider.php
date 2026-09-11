@@ -24,6 +24,9 @@ class UserServiceProvider extends ServiceProvider
 
         $router->aliasMiddleware('user', \Doxa\User\Http\Middleware\User::class);
         $router->aliasMiddleware('authorization', \Doxa\User\Http\Middleware\Authorization::class);
+        $router->aliasMiddleware('resolve_auth_session', \Doxa\User\Http\Middleware\ResolveAuthSession::class);
+
+        Route::middleware('web')->group(__DIR__ . '/../Routes/auth_sessions.php');
 
         $this->publishes([
             __DIR__ . '/../Resources/assets/dist' => public_path('/doxa/user'),
@@ -38,6 +41,7 @@ class UserServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/onboarding.php', 'onboarding');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/auth_sessions.php', 'user.auth_sessions');
 
         //$this->registerBouncer();
 

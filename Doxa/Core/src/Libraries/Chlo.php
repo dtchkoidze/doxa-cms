@@ -209,10 +209,26 @@ class Chlo
 
     }
 
+    public static function getCurrentChannel()
+    {
+        if (self::$instance->channel) {
+            return self::$instance->channel;
+        }
+        return 0;
+    }
+
     public static function getCurrentChannelId()
     {
         if (self::$instance->channel) {
             return self::$instance->channel->id;
+        }
+        return 0;
+    }
+
+    public static function getCurrentChannelName()
+    {
+        if (self::$instance->channel) {
+            return self::$instance->channel->name;
         }
         return 0;
     }
@@ -366,13 +382,22 @@ class Chlo
         // return $this->channel;
     }
 
-    public static function isChannelExists($id)
+    /**
+     * Возвращает канал по id или name, либо false, если канала нет.
+     */
+    public static function isChannelExists($val)
     {
+        $byId = is_int($val) || (is_string($val) && ctype_digit($val));
+
         foreach (self::$instance->channels as $channel) {
-            if ($channel->id == $id) {
+            if ($byId && (int) $channel->id === (int) $val) {
+                return $channel;
+            }
+            if (!$byId && $channel->name === $val) {
                 return $channel;
             }
         }
+
         return false;
     }
 

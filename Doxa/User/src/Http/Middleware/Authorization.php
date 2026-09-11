@@ -22,11 +22,9 @@ class Authorization
      */
     public function handle($request, \Closure $next)
     {
-        Clog::write(Registration::LOG, '>>>>>>>>>>>>>>>> MIDDLEWARE::Registration, route: ' . Route::currentRouteName() . ', >>>>>>>>>>>>>>>>>>>', Clog::NOTICE);
+        Clog::write(Registration::LOG, '>>>>>> MIDDLEWARE::Registration, route: ' . Route::currentRouteName() . ', >>>>>>', Clog::NOTICE);
 
         $registration = Registration::init();
-
-        Clog::write(Registration::LOG, 'Route::currentRouteName(): ' . Route::currentRouteName(), Clog::NOTICE);
 
         /**
          * Check GET params for verification link, v_hash(vh) and login_type(lt) must be provided.

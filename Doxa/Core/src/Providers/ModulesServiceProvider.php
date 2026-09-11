@@ -126,6 +126,13 @@ class ModulesServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        // Конфиг локали (cookie / known_codes) — здесь, т.к. CoreServiceProvider
+        // может ещё не попасть в package discovery у path-репозитория.
+        $this->mergeConfigFrom(
+            __DIR__ . '/../../config/locale.php',
+            'doxa.locale'
+        );
+
         $this->bindsAndDirectives();
     }
 

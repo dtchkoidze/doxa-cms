@@ -35,6 +35,7 @@
 	"extra": {
 		"laravel": {
 			"providers": [
+				"Doxa\\Core\\Providers\\CoreServiceProvider",
 				"Doxa\\Core\\Providers\\ModulesServiceProvider",
 				"Doxa\\User\\Providers\\UserServiceProvider",
 				"Doxa\\Admin\\Providers\\AdminServiceProvider",

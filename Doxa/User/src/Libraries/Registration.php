@@ -202,6 +202,16 @@ class Registration
     protected ?string $success_auth_url = '/';
 
     /**
+     * Прочитанное значение куки success_auth_url (после forget куки в браузере).
+     */
+    private ?string $success_auth_url_cookie_value = null;
+
+    /**
+     * false — ещё не читали куку в этом запросе; true — уже читали (value может быть null).
+     */
+    private bool $success_auth_url_cookie_read = false;
+
+    /**
      * Is current user admin
      *
      * @var boolean
@@ -217,7 +227,7 @@ class Registration
 
     /**
      * Code expire time in minutes
-     2
+     *
      * @var integer
      */
     protected int $verification_code_expire_in = 5;
@@ -306,12 +316,24 @@ class Registration
      */
     public $login = '';
 
+    /**
+     * Допустимые типы auth-потока из route-параметра {method}.
+     *
+     * @var list<string>
+     */
     protected $methods = [
         'register',
         'recovery',
         'account_deletion',
     ];
 
+    /**
+     * Текущий auth-поток из route-параметра {method}
+     * (register | recovery | account_deletion).
+     * Пустой/null на роутах без {method} (например login).
+     *
+     * @var string|null
+     */
     protected $method = '';
 
     protected $stage = '';
@@ -387,7 +409,9 @@ class Registration
         }
 
         $this->method = request()->route()->parameter('method');
-        Clog::write(self::LOG, '$this->method: ' . $this->method, Clog::DEBUG);
+        if( $this->method){
+            Clog::write(self::LOG, 'Method: ' . $this->method, Clog::DEBUG);
+        }
 
         // Get mode and mode varuables
         $this->resolveMode();
@@ -432,17 +456,18 @@ class Registration
      */
     protected function resolveMode()
     {
+        Clog::write(self::LOG, 'MODE RESOLVE', Clog::DEBUG);
         if (!empty(request('mode'))) {
-            Clog::write(self::LOG, 'Mode exists in request: ' . request('mode') . '. Setting cookie.', Clog::DEBUG);
+            Clog::write(self::LOG, '-- Mode exists in request: ' . request('mode') . '. Setting cookie.', Clog::DEBUG);
             $this->mode = request('mode');
             Cookie::queue($this->auth_mode_cookie_name, $this->mode, $this->auth_cookies_expire);
         } else {
             if (Cookie::has($this->auth_mode_cookie_name)) {
-                Clog::write(self::LOG, 'Mode exists in cookie: ' . Cookie::get($this->auth_mode_cookie_name), Clog::DEBUG);
+                Clog::write(self::LOG, '-- Mode exists in cookie: ' . Cookie::get($this->auth_mode_cookie_name), Clog::DEBUG);
                 $this->mode = Cookie::get($this->auth_mode_cookie_name);
                 Cookie::queue($this->auth_mode_cookie_name, $this->mode, $this->auth_cookies_expire);
             } else {
-                Clog::write(self::LOG, 'Mode NOT exists in cookie', Clog::DEBUG);
+                Clog::write(self::LOG, '-- Mode NOT exists in cookie', Clog::DEBUG);
             }
         }
 
@@ -450,13 +475,13 @@ class Registration
             $this->mode = 'default';
         }
 
-        Clog::write(self::LOG, 'mode: ' . $this->mode, Clog::NOTICE);
+        Clog::write(self::LOG, '-- mode: ' . $this->mode, Clog::NOTICE);
         $this->mode_options = Utils::getCustomAuthOptions($this->mode);
 
         if (empty($this->mode_options)) {
-            Clog::write(self::LOG, 'mode_options is empty', Clog::DEBUG);
+            Clog::write(self::LOG, '-- mode_options is empty', Clog::DEBUG);
         } else {
-            Clog::write(self::LOG, 'mode_options: ' . json_encode($this->mode_options), Clog::NOTICE);
+            Clog::write(self::LOG, '-- mode_options: ' . json_encode($this->mode_options), Clog::NOTICE);
         }
     }
 
@@ -570,21 +595,21 @@ class Registration
      */
     protected function getPendingUser()
     {
+        Clog::write(self::LOG, 'RESOLVE PENDING USER', Clog::DEBUG);
         if (request('vh') && request('lt')) {
-            Clog::write(self::LOG, '$_GET: vh: ' . request('vh') . ', lt: ' . request('lt'), Clog::NOTICE);
+            Clog::write(self::LOG, '-- vh && lt in $_GET: vh: ' . request('vh') . ', lt: ' . request('lt'), Clog::NOTICE);
             $this->v_hash = request('vh');
             $this->login_type = request('lt');
         } else {
-            Clog::write(self::LOG, 'try get cookie', Clog::DEBUG);
             $this->getAuthCookie();
         }
 
         if (!$this->v_hash || !$this->login_type) {
-            Clog::write(self::LOG, 'v_hash OR login_type is empty!', Clog::DEBUG);
+            Clog::write(self::LOG, '-- v_hash OR login_type is empty!', Clog::DEBUG);
             return false;
         } else {
-            Clog::write(self::LOG, 'v_hash: ' . $this->v_hash, Clog::NOTICE);
-            Clog::write(self::LOG, 'login_type: ' . $this->login_type, Clog::NOTICE);
+            Clog::write(self::LOG, '-- v_hash: ' . $this->v_hash, Clog::NOTICE);
+            Clog::write(self::LOG, '-- login_type: ' . $this->login_type, Clog::NOTICE);
         }
 
         $_user = User::where('v_hash', $this->v_hash);
@@ -599,8 +624,8 @@ class Registration
 
         $this->login = $this->user->{$this->login_type};
 
-        Clog::write(self::LOG, 'User login: ' . $this->login, Clog::NOTICE);
-        Clog::write(self::LOG, 'User id: ' . $this->user->id, Clog::NOTICE);
+        Clog::write(self::LOG, '-- user login: ' . $this->login, Clog::NOTICE);
+        Clog::write(self::LOG, '-- user id: ' . $this->user->id, Clog::NOTICE);
 
         return true;
     }
@@ -753,7 +778,7 @@ class Registration
     {
         $this->user = Auth::user();
 
-        Clog::write(self::LOG, 'setUserFromAuth() this.user: ' . json_encode($this->user), Clog::DEBUG);
+        Clog::write(self::LOG, 'Присваиваем $this->user = Auth::user() (сокращенно):', ['id' => $this->user->id, 'login' => $this->user->email, 'status' => $this->user->status], Clog::DEBUG);
 
         return $this;
     }
@@ -792,7 +817,7 @@ class Registration
         //dd($cookie);
         if ($cookie) {
             $data = json_decode($cookie);
-            Clog::write(self::LOG, 'Got cookie: ' . json_encode($data), Clog::DEBUG);
+            Clog::write(self::LOG, 'Got auth ('. $this->auth_cookie_name .') cookie: ' . json_encode($data), Clog::DEBUG);
             if (!empty($data->v_hash)) {
                 $this->v_hash = $data->v_hash;
             }
@@ -809,15 +834,12 @@ class Registration
 
     protected function persistOnboarding(bool $clearSession = true, bool $replaceSuccessUrl = false, bool $useSession = true): self
     {
-        Clog::write(self::LOG, 'Onboarding persistOnboarding', [
-            'user_id' => $this->user ? (int) $this->user->id : null,
-            'clear_session' => $clearSession,
-            'replace_success_url' => $replaceSuccessUrl,
-            'use_session' => $useSession,
-        ], Clog::NOTICE);
-
         if (!$this->user) {
-            Clog::write(self::LOG, 'Onboarding persistOnboarding skipped (no user)', Clog::NOTICE);
+            Clog::write(
+                self::LOG,
+                'Onboarding: сохранение в БД пропущено — пользователь в Registration ещё не установлен.',
+                Clog::NOTICE
+            );
             return $this;
         }
 
@@ -839,33 +861,47 @@ class Registration
                 if ($url !== null) {
                     $safe = $this->sanitizeSafeRedirectUrl($url);
                     if ($safe) {
-                        Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl', [
-                            'url' => $safe,
-                            'user_id' => (int) $this->user->id,
-                        ], Clog::NOTICE);
+                        Clog::write(
+                            self::LOG,
+                            'Onboarding: URL после логина взят из onboarding.success_url для user_id='
+                            . (int) $this->user->id . ': ' . $safe . '.',
+                            Clog::NOTICE
+                        );
                         return $safe;
                     }
-                    Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl unsafe after sanitize', [
-                        'url' => $url,
-                        'user_id' => (int) $this->user->id,
-                    ], Clog::NOTICE);
+                    Clog::write(
+                        self::LOG,
+                        'Onboarding: success_url из БД «' . $url . '» отклонён санитайзером '
+                        . '(небезопасный путь). user_id=' . (int) $this->user->id . '.',
+                        Clog::NOTICE
+                    );
                 } else {
-                    Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl: no success_url row', [
-                        'user_id' => (int) $this->user->id,
-                    ], Clog::NOTICE);
+                    Clog::write(
+                        self::LOG,
+                        'Onboarding: у user_id=' . (int) $this->user->id
+                        . ' нет строки success_url — пробую запасной URL из mode_options.',
+                        Clog::NOTICE
+                    );
                     if (!empty($this->mode_options['success_url'])) {
                         $fromMode = $this->sanitizeSafeRedirectUrl($this->mode_options['success_url']);
                         if ($fromMode) {
-                            Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl: mode_options success_url', [
-                                'url' => $fromMode,
-                                'user_id' => (int) $this->user->id,
-                            ], Clog::NOTICE);
+                            Clog::write(
+                                self::LOG,
+                                'Onboarding: success_url из mode_options (конфиг режима auth) для user_id='
+                                . (int) $this->user->id . ': ' . $fromMode . '.',
+                                Clog::NOTICE
+                            );
                             return $fromMode;
                         }
                     }
                 }
             } else {
-                Clog::write(self::LOG, 'Onboarding getSuccessAuthUrl: hasSuccessUrlQueryKey but no user', Clog::NOTICE);
+                Clog::write(
+                    self::LOG,
+                    'Onboarding: конфиг знает success_url, но пользователь ещё не залогинен — '
+                    . 'читать строку onboarding нельзя.',
+                    Clog::NOTICE
+                );
             }
         } else {
             $this->success_auth_url = $this->sanitizeSafeRedirectUrl($this->getSuccessAuthUrlCookie());
@@ -1183,7 +1219,7 @@ class Registration
 
         $this->user = User::create($set);
 
-        $this->persistOnboarding(false, false, false);
+        $this->persistOnboarding(clearSession: false, replaceSuccessUrl: false, useSession: false);
 
         return $this;
     }
@@ -1390,9 +1426,26 @@ class Registration
     }
 
 
-    private function getSuccessAuthUrlCookie()
+    private function getSuccessAuthUrlCookie(): ?string
     {
-        return Cookie::get('success_auth_url');
+        if ($this->success_auth_url_cookie_read) {
+            return $this->success_auth_url_cookie_value;
+        }
+
+        $this->success_auth_url_cookie_read = true;
+
+        $value = Cookie::get('success_auth_url');
+        if (!is_string($value) || $value === '') {
+            $this->success_auth_url_cookie_value = null;
+
+            return null;
+        }
+
+        $this->success_auth_url_cookie_value = $value;
+        Cookie::queue(Cookie::forget('success_auth_url'));
+        Clog::write(self::LOG, 'success_auth_url cookie consumed, forget queued: ' . $value, Clog::DEBUG);
+
+        return $this->success_auth_url_cookie_value;
     }
 
     private function setSuccessAuthUrlCookie($path)
@@ -1404,11 +1457,14 @@ class Registration
         }
 
         if (Onboarding::hasSuccessUrlQueryKey()) {
-            $queryKey = Onboarding::successQueryKey();
-            Clog::write(self::LOG, 'Onboarding setSuccessAuthUrlCookie -> session', [
-                'query_key' => $queryKey,
-                'value' => $safe,
-            ], Clog::NOTICE);
+            $queryKey = Onboarding::successUrlQueryKey();
+            Clog::write(
+                self::LOG,
+                'Onboarding: вместо cookie success_auth_url кладу путь в сессию onboarding_query '
+                . '(ключ «' . (string) $queryKey . '» = «' . $safe . '»), '
+                . 'потом при логине это станет строкой onboarding.success_url.',
+                Clog::NOTICE
+            );
             Onboarding::saveToSession([$queryKey => $safe]);
             return;
         }
@@ -1418,8 +1474,29 @@ class Registration
 
     protected function afterSetPassword() {}
 
+    /**
+     * Opaque context для user_auth_sessions.product (хост переопределяет, напр. код продукта).
+     * null / пустая строка — web_session не пишется.
+     */
+    protected function authSessionContext(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * После успешного login: журнал UserGeo + строка auth session (если есть context).
+     */
+    protected function recordLoginArtifacts(): void
+    {
+        $userId = (int) $this->user->id;
+        (new UserGeo())->record($userId);
+        (new AuthSessionService())->recordWebSessionAfterLogin($userId, $this->authSessionContext());
+    }
+
     protected function logout()
     {
+        $this->revokeAuthSessionBeforeLogout();
+
         Auth::logout();
 
         $session = request()->session();
@@ -1427,6 +1504,14 @@ class Registration
         $session->regenerateToken();
 
         $this->clearAuthCookie();
+    }
+
+    /**
+     * Отзывает текущий web_session до invalidate.
+     */
+    protected function revokeAuthSessionBeforeLogout(): void
+    {
+        (new AuthSessionService())->revokeCurrentWebSession();
     }
 
     public static function __callStatic($name, $arguments)

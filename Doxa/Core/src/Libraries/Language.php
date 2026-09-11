@@ -2,50 +2,46 @@
 
 namespace Doxa\Core\Libraries;
 
-use Doxa\Core\Libraries\Logging\Clog;
-use Illuminate\Support\Facades\Cookie;
-
+/**
+ * Вспомогательная логика для LocaleMiddleware: локали канала и разбор URL.
+ * Cookie и канал уже подготовлены EnsureChannelLocaleCookie / ProjectLocale.
+ */
 trait Language
 {
+    /** @var object|null Текущий канал */
     protected $channel;
 
+    /** @var \Illuminate\Support\Collection|null Локали канала */
     protected $locales;
 
-    protected ?string $defaultLocale;
-
-    protected ?string $routePrefix;
-
-    /** @var object|null Locale marked without_prefix (e.g. ka) */
+    /** @var object|null Локаль с without_prefix */
     protected $locale_without_prefix = null;
 
-    protected $errors = [];
+    /** @var list<string> */
+    protected array $errors = [];
 
-    protected $config;
+    public string $log_name = 'language';
 
-    public $log_name = 'language';
-
-    protected int $cookieExpires = 60 * 24 * 30 * 12;
-
-    protected string $cookieName = '_project_locale';
-
-    protected function initialize()
+    /**
+     * Подтягивает канал и локали из уже инициализированного Chlo.
+     * Возвращает true при успехе, false если канала/локалей нет.
+     */
+    protected function initialize(): bool
     {
         $this->errors = [];
 
-        Chlo::init();
-        $this->channel = Chlo::getChannelByHostAndSetAsCurrent();
+        $this->channel = Chlo::getCurrentChannel();
+        if (!$this->channel) {
+            $this->channel = ProjectLocale::ensureChannel();
+        }
 
         if (!$this->channel) {
-            Clog::write($this->log_name, 'channel not found');
-            Clog::write('critical', 'channel not found');
             $this->setError('channel not found');
             return false;
         }
 
         if (empty($this->channel->locales)) {
-            Clog::write($this->log_name, 'empty locales for channel ' . $this->channel->code);
-            Clog::write('critical', 'empty locales for channel ' . $this->channel->code);
-            $this->setError('empty locales for channel ' . $this->channel->code);
+            $this->setError('empty locales for channel ' . ($this->channel->code ?? ''));
             return false;
         }
 
@@ -55,58 +51,47 @@ trait Language
             return !empty($locale->without_prefix);
         });
 
-        $this->getDefaultLocale();
-
-        $this->routePrefix = request()->segment(1);
-
-        if ($this->routePrefix) {
-            if ($this->locales->doesntContain('code', $this->routePrefix)) {
-                $this->routePrefix = '';
-            }
-        }
-
         return true;
     }
 
-    protected function getDefaultLocale()
+    /**
+     * Возвращает код локали из cookie (валидной для канала).
+     */
+    protected function cookieLocaleCode(): string
     {
-        $this->defaultLocale = $this->tryGetLocaleFromCookie();
-        if (!$this->defaultLocale) {
-            $this->defaultLocale = $this->getPreferredLocale();
-        }
-        if (!$this->defaultLocale) {
-            $default = $this->locales->first(function ($locale) {
-                return !empty($locale->default);
-            });
-            $this->defaultLocale = $default ? $default->code : ($this->locales->first()->code ?? null);
-        }
-    }
-
-    private function getPreferredLocale(): string|null
-    {
-        $lng = request()->getPreferredLanguage();
-        $lng = (strpos($lng, '_') !== false) ? explode('_', $lng)[0] : ((strpos($lng, '-') !== false) ? explode('-', $lng)[0] : $lng);
-        $preferredLanguageCode = ($this->locales->contains('code', $lng)) ? $lng : null;
-        return $preferredLanguageCode;
-    }
-
-    protected function buildPathWithLocalePrefix()
-    {
-        $segments = request()->segments();
-        array_unshift($segments, $this->defaultLocale);
-        $path = '/' . implode('/', $segments);
-
-        if ($query = request()->getQueryString()) {
-            $path .= '?' . $query;
-        }
-
-        return $path;
+        return ProjectLocale::cookieLocaleCode();
     }
 
     /**
-     * Drop the first URL segment (locale or alias) for without_prefix locales.
+     * Проверяет, есть ли код среди локалей текущего канала.
      */
-    protected function buildPathWithoutLocalePrefix()
+    protected function isChannelLocale(string $code): bool
+    {
+        return $this->locales !== null && $this->locales->contains('code', $code);
+    }
+
+    /**
+     * Проверяет, похож ли сегмент на код языка по конфигу known_codes.
+     */
+    protected function isKnownLocaleCode(string $code): bool
+    {
+        return ProjectLocale::isKnownCode($code);
+    }
+
+    /**
+     * Собирает путь: локаль из cookie + сегменты без префикса языка.
+     *
+     * @param  list<string>  $pathSegments
+     */
+    protected function buildPathWithCookieLocale(array $pathSegments = []): string
+    {
+        return ProjectLocale::buildPath($this->cookieLocaleCode(), $pathSegments);
+    }
+
+    /**
+     * Собирает путь без первого сегмента (locale / alias) — для without_prefix.
+     */
+    protected function buildPathWithoutLocalePrefix(): string
     {
         $segments = request()->segments();
         if (!empty($segments)) {
@@ -114,71 +99,47 @@ trait Language
         }
 
         $path = '/' . implode('/', $segments);
+        if ($path === '/') {
+            // уже корень
+        }
 
         if ($query = request()->getQueryString()) {
             $path .= '?' . $query;
         }
 
-        return $path;
+        return $path === '' ? '/' : $path;
     }
 
-    protected function buildLngPath($locale = '')
+    /**
+     * Пишет cookie и выставляет текущую локаль (Chlo + app).
+     */
+    public function setCookie(string $locale): void
     {
-        $redirectPath = '';
-        if ($locale) {
-            $redirectPath = $locale;
-        }
-
-        $segments = request()->segments();
-
-        if ($this->routePrefix) {
-            array_shift($segments);
-        }
-
-        $locales = core()->getCurrentChannel()->locales->pluck('code')->toArray();
-
-        if (isset($segments[0]) && !in_array($segments[0], $locales)) {
-            array_shift($segments);
-        }
-
-        if ($path = implode('/', $segments)) {
-            $redirectPath .= '/' . $path;
-        }
-
-        if ($query = request()->getQueryString()) {
-            $redirectPath .= '?' . $query;
-        }
-
-        return $redirectPath;
+        ProjectLocale::applyLocale($locale);
     }
 
-    public function setCookie($locale)
-    {
-        Cookie::queue($this->cookieName, $locale, $this->cookieExpires);
-    }
-
-    private function tryGetLocaleFromCookie(): string|null
-    {
-        $locale = request()->cookie($this->cookieName);
-        if ($locale) {
-            if (!$this->locales->contains('code', $locale)) {
-                $locale = null;
-            }
-        }
-        return $locale;
-    }
-
-    protected function setError($error)
+    /**
+     * Добавляет ошибку инициализации.
+     */
+    protected function setError(string $error): void
     {
         $this->errors[] = $error;
     }
 
-    protected function getErrors()
+    /**
+     * Возвращает накопленные ошибки.
+     *
+     * @return list<string>
+     */
+    protected function getErrors(): array
     {
         return $this->errors;
     }
 
-    protected function getErrorsString($delimiter = '; ')
+    /**
+     * Возвращает ошибки одной строкой.
+     */
+    protected function getErrorsString(string $delimiter = '; '): string
     {
         return implode($delimiter, $this->errors);
     }

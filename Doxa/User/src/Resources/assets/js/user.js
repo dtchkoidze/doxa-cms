@@ -2,6 +2,14 @@ import axios from "axios";
 window.axios = axios;
 window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 window.axios.defaults.baseURL = window.location.origin;
+window.axios.defaults.withCredentials = true;
+window.axios.interceptors.request.use((config) => {
+    const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+    if (match) {
+        config.headers["X-XSRF-TOKEN"] = decodeURIComponent(match[1]);
+    }
+    return config;
+});
 
 const pageQuery = Object.fromEntries(new URLSearchParams(window.location.search));
 if (Object.keys(pageQuery).length > 0) {
@@ -11,6 +19,7 @@ if (Object.keys(pageQuery).length > 0) {
     });
 }
 import { createApp } from "vue";
+import { loadDictionary, vocab } from "@doxa-dict/useDictionary.js";
 import Emitter from "./utils/emitter";
 import Login from "./apps/Login.vue";
 import Register from "./apps/Register.vue";
@@ -57,8 +66,11 @@ const app = createApp({
 });
 
 [Emitter].forEach((plugin) => app.use(plugin));
-//app.use(Cookies);
-app.mount("#auth-app");
 
-
-
+// Как в Eventer public app: сначала словарь, потом window + globalProperties, потом mount
+const locale = document.documentElement.lang || "en";
+loadDictionary(locale).then(() => {
+    window.vocab = vocab;
+    app.config.globalProperties.vocab = vocab;
+    app.mount("#auth-app");
+});

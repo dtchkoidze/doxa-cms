@@ -2,36 +2,43 @@
 
 namespace Doxa\Core\Providers;
 
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Config;
+use Doxa\Core\Console\Commands\DictionaryBuildCommand;
+use Doxa\Core\Console\Commands\DictionaryScanCommand;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * Class ProjectsServiceProvider represents an entry point 
- * for conditional registration of project service providers.
+ * Core: локаль, команды словаря Doxa, маршрут /doxa/locale.
+ * JSON словаря — статика хоста public/doxa/dictionary (не через контроллер).
  */
 class CoreServiceProvider extends ServiceProvider
 {
-
     /**
-     * Bootstrap services.
-     *
-     * @return void
+     * Регистрирует конфиги локали и словаря; artisan-команды словаря.
      */
-    public function boot() 
+    public function register(): void
     {
-        
+        $this->mergeConfigFrom(
+            __DIR__ . '/../../config/locale.php',
+            'doxa.locale'
+        );
+
+        $this->mergeConfigFrom(
+            __DIR__ . '/../../config/dictionary.php',
+            'doxa.dictionary'
+        );
+
+        $this->commands([
+            DictionaryScanCommand::class,
+            DictionaryBuildCommand::class,
+        ]);
     }
 
     /**
-     * Register services.
-     *
-     * @return void
+     * Подключает маршруты Core (смена локали).
      */
-    public function register() 
+    public function boot(): void
     {
-        
+        Route::middleware('web')->group(__DIR__ . '/../Routes/core.php');
     }
-
 }

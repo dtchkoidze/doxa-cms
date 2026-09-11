@@ -235,21 +235,18 @@ class SocialAuthService
         request()->session()->regenerate();
         $this->clearPending($this->providerNameFromConfig($provider));
 
-        Clog::write(REG::LOG, 'Onboarding persist after social login', [
-            'user_id' => $user->id,
-            'provider' => $this->providerNameFromConfig($provider),
-        ], Clog::NOTICE);
-
         REG::init();
         REG::setUserFromAuth();
-        REG::persistOnboarding(true, true);
+        REG::persistOnboarding(clearSession: true, replaceSuccessUrl: true);
+        REG::recordLoginArtifacts();
 
         $url = REG::getSuccessAuthUrl();
-        Clog::write(REG::LOG, 'Onboarding social redirect', [
-            'user_id' => $user->id,
-            'provider' => $this->providerNameFromConfig($provider),
-            'url' => $url,
-        ], Clog::NOTICE);
+        Clog::write(
+            REG::LOG,
+            'Onboarding: после social-login (' . $this->providerNameFromConfig($provider) . ') '
+            . 'редирект user_id=' . $user->id . ' → ' . $url . '.',
+            Clog::NOTICE
+        );
 
         return [
             'action' => 'redirect',

@@ -19,7 +19,7 @@
 
             <!---------- Password ------------>
             <div>
-                <label class="block mb-1 text-sm font-medium" for="password">Password</label>
+                <label class="block mb-1 text-sm font-medium" for="password">{{ vocab('vcb.password') }}</label>
                 <div class="relative">
                     <input class="w-full form-input password" :type="password_visible ? 'text' : 'password'"
                         name="password" id="password" v-model="form_data.password" autocomplete="current-password"
@@ -146,6 +146,15 @@ export default {
         },
     },
     methods: {
+        authDriver() {
+            return document.getElementById('auth-app')?.dataset?.authDriver || 'session';
+        },
+        tokenStorageKey() {
+            return document.getElementById('auth-app')?.dataset?.tokenStorageKey || 'mobile_api_token';
+        },
+        authSuccessUrl() {
+            return document.getElementById('auth-app')?.dataset?.authSuccessUrl || '/welcome';
+        },
         submit() {
             if (this.locked) {
                 return;
@@ -153,6 +162,10 @@ export default {
             this.processing = true;
             this.checkForm();
             if (!this.isError()) {
+                if (this.authDriver() === 'mobile_token') {
+                    this.submitMobileToken();
+                    return;
+                }
                 axios.postForm(`auth/api/login`, this.form_data)
                     .then(response => {
                         if (response.data.success) {
@@ -183,6 +196,37 @@ export default {
             } else {
                 this.processing = false;
             }
+        },
+        submitMobileToken() {
+            axios.post('/api/auth/mobile/login', {
+                email: this.form_data.email,
+                password: this.form_data.password,
+            })
+                .then(response => {
+                    if (response.data.success && response.data.token) {
+                        this.clearLockout();
+                        localStorage.setItem(this.tokenStorageKey(), response.data.token);
+                        this.afterLogin();
+                        window.location.href = response.data.redirect || this.authSuccessUrl();
+                        return;
+                    }
+                    if (!response.data.success) {
+                        const message = response.data.message || 'Login failed';
+                        this.errors.login_failed = message;
+                        if (response.data.errors) {
+                            this.setResponceErrors(response.data.errors);
+                        }
+                    }
+                    this.processing = false;
+                })
+                .catch(error => {
+                    console.log("error: ", error);
+                    const message = error.response?.data?.message;
+                    if (message) {
+                        this.errors.login_failed = message;
+                    }
+                    this.processing = false;
+                });
         },
         checkForm() {
             this.errors.email = '';

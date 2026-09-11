@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 
 <head>
     <meta charset="utf-8">
@@ -26,7 +26,11 @@
 
 <body class="text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-400">
 
-    <div id="auth-app">
+    <div id="auth-app"
+        data-auth-driver="{{ config('user.auth_sessions.auth_driver', 'session') }}"
+        data-token-storage-key="{{ config('user.auth_sessions.token_storage_key', 'mobile_api_token') }}"
+        data-auth-success-url="{{ config('user.auth_sessions.auth_success_url', '/welcome') }}"
+    >
         @yield('wrapper')
     </div>
 

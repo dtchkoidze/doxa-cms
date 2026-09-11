@@ -1,12 +1,23 @@
 import plugin from "tailwindcss/plugin";
 import forms from '@tailwindcss/forms';
+import path from "path";
+import { loadEnv } from "vite";
+
+// Blade auth хоста (eventer::auth.wrapper) — иначе классы только оттуда не попадут в user.css
+const pkgEnv = loadEnv(process.env.MODE || process.env.NODE_ENV || "development", path.resolve("../../"), "");
+const consumerRoot = pkgEnv.VITE_CONSUMER_PROJECT_PATH;
+const consumerAuthViews = consumerRoot
+    ? [path.join(consumerRoot, "resources/views/auth/**/*.blade.php")]
+    : [];
 
 export default {
     content: [
         "./src/Resources/views/**/*.blade.php",
         "./src/Resources/**/*.js",
         "./src/Resources/**/*.vue",
+        ...consumerAuthViews,
     ],
+
   darkMode: 'class',
   theme: {
     extend: {

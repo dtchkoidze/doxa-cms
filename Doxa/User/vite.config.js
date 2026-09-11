@@ -48,6 +48,11 @@ export default defineConfig(({ mode }) => {
 		resolve: {
 			alias: {
 				vue: "vue/dist/vue.esm-bundler.js",
+				// Изолированный словарь Doxa (Core), не словарь хоста
+				"@doxa-dict": path.resolve(
+					__dirname,
+					"../Core/src/Resources/assets/js/dictionary"
+				),
 			},
 		},
 	};

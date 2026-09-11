@@ -29,10 +29,12 @@ class Onboarding
 
     public static function make(int $userId): self
     {
+        Clog::write(Registration::LOG, 'ONBOARDING::make(userId: ' . $userId . ')', Clog::DEBUG);
         $class = config('onboarding.handler');
         if (!is_string($class) || $class === '') {
             $class = self::class;
         }
+        Clog::write(Registration::LOG, 'ONBOARDING::class: ' . $class, Clog::DEBUG);
 
         return new $class($userId);
     }
@@ -90,7 +92,7 @@ class Onboarding
     }
 
     /**
-     * Query лендинга с Referer: кнопка соцлогина открывает redirect без search.
+     * Query-параметры с Referer той же зоны: кнопка соцлогина открывает redirect без search.
      *
      * @return array<string, string>
      */
@@ -147,10 +149,17 @@ class Onboarding
             return;
         }
 
-        Clog::write(Registration::LOG, 'Onboarding saveRequestToSession', [
-            'source' => $source,
-            'values' => $values,
-        ], Clog::NOTICE);
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: кладу в сессию ' . self::SESSION_KEY . ' query-ключи из конфига onboarding_query_keys '
+            . '(потом при логине уйдут в таблицу onboarding).' . "\n"
+            . 'Источник: ' . ($source === 'request'
+                ? 'query текущего запроса'
+                : 'query из Referer той же зоны (кнопка соцлогина уходит без search)') . ".\n"
+            . 'Ключи конфига: ' . self::formatConfiguredKeys() . ".\n"
+            . 'Значения сейчас: ' . self::formatPairs($values) . '.',
+            Clog::NOTICE
+        );
 
         self::saveToSession($values);
     }
@@ -172,28 +181,39 @@ class Onboarding
         $merged = array_merge($current, $values);
         session([self::SESSION_KEY => $merged]);
 
-        Clog::write(Registration::LOG, 'Onboarding saveToSession', [
-            'was' => $current,
-            'add' => $values,
-            'session' => $merged,
-        ], Clog::NOTICE);
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: обновляю сессию ' . self::SESSION_KEY . ' (временное хранилище до записи в БД).' . "\n"
+            . 'Было в сессии: ' . self::formatPairs($current) . ".\n"
+            . 'Добавляю/перезаписываю: ' . self::formatPairs($values) . ".\n"
+            . 'Стало в сессии: ' . self::formatPairs($merged) . '.',
+            Clog::NOTICE
+        );
     }
 
     public static function clearSession(): void
     {
         $was = session(self::SESSION_KEY);
         session()->forget(self::SESSION_KEY);
-        Clog::write(Registration::LOG, 'Onboarding clearSession', [
-            'was' => is_array($was) ? $was : $was,
-        ], Clog::NOTICE);
+        $wasPairs = is_array($was) ? self::formatPairs($was) : '(сессии не было)';
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: очищаю сессию ' . self::SESSION_KEY
+            . ' — параметры уже перенесены в БД или больше не нужны.' . "\n"
+            . 'Что удалили: ' . $wasPairs . '.',
+            Clog::NOTICE
+        );
     }
 
     public function saveToUser(bool $clearSession = false, bool $replaceSuccessUrl = false, bool $useSession = true): void
     {
         if (!self::enabled()) {
-            Clog::write(Registration::LOG, 'Onboarding saveToUser skipped (disabled)', [
-                'user_id' => $this->userId,
-            ], Clog::NOTICE);
+            Clog::write(
+                Registration::LOG,
+                'Onboarding: запись в БД пропущена — onboarding выключен (пустой onboarding_query_keys).'
+                . ' user_id=' . $this->userId . '.',
+                Clog::NOTICE
+            );
             return;
         }
 
@@ -206,25 +226,60 @@ class Onboarding
         }
 
         $fromRequest = self::requestValues();
+        if ($fromRequest !== []) {
+            Clog::write(Registration::LOG, 'ONBOARDING values from request: ', $fromRequest, Clog::DEBUG);
+        }
+        if ($fromSession !== []) {
+            Clog::write(Registration::LOG, 'ONBOARDING values from session: ', $fromSession, Clog::DEBUG);
+        }
         $values = array_merge($fromSession, $fromRequest);
+        if ($values !== []) {
+            Clog::write(Registration::LOG, 'ONBOARDING merged values: ', $values, Clog::DEBUG);
+        } else {
+            Clog::write(Registration::LOG, 'ONBOARDING values is empty', Clog::DEBUG);
+        }
 
-        Clog::write(Registration::LOG, 'Onboarding saveToUser', [
-            'user_id' => $this->userId,
-            'clear_session' => $clearSession,
-            'replace_success_url' => $replaceSuccessUrl,
-            'use_session' => $useSession,
-            'session' => $fromSession,
-            'request' => $fromRequest,
-            'merged' => $values,
-        ], Clog::NOTICE);
+        $successUrlKey = self::successUrlQueryKey();
+        Clog::write(Registration::LOG, 'ONBOARDING::successUrlKey: ' . $successUrlKey, Clog::DEBUG);
+
+        if ($values === []) {
+            Clog::write(
+                Registration::LOG,
+                'Onboarding: после логина для user_id=' . $this->userId
+                . ' — в сессии ' . self::SESSION_KEY . ' и в query запроса нет ни одного ключа из конфига '
+                . '(' . self::formatConfiguredKeys() . ').' . "\n"
+                . 'Новые строки в таблицу onboarding не пишутся.' . "\n"
+                . 'Читать сессию: ' . ($useSession ? 'да' : 'нет') . '.' . "\n"
+                . 'Очистить сессию всё равно: ' . ($clearSession ? 'да' : 'нет') . '.' . "\n"
+                . 'Сбросить старый success_url в БД (ключа «' . (string) $successUrlKey . '» нет): '
+                . ($replaceSuccessUrl ? 'да' : 'нет') . '.',
+                Clog::NOTICE
+            );
+        } else {
+            Clog::write(
+                Registration::LOG,
+                'Onboarding: пишу в таблицу onboarding для user_id=' . $this->userId . '.' . "\n"
+                . 'Ключи конфига (query → target): ' . self::formatConfiguredKeys() . '.' . "\n"
+                . 'Читать сессию ' . self::SESSION_KEY . ': ' . ($useSession ? 'да' : 'нет (только query запроса)') . ".\n"
+                . 'В сессии: ' . self::formatPairs($fromSession) . ".\n"
+                . 'В query запроса: ' . self::formatPairs($fromRequest) . ".\n"
+                . 'Итого запишу (запрос перекрывает сессию): ' . self::formatPairs($values) . ".\n"
+                . 'После записи очистить сессию: ' . ($clearSession ? 'да' : 'нет') . ".\n"
+                . 'Если нет ключа «' . (string) $successUrlKey . '» — сбросить старый success_url в БД: '
+                . ($replaceSuccessUrl ? 'да' : 'нет') . '.',
+                Clog::NOTICE
+            );
+        }
 
         $map = self::queryKeys();
         foreach ($values as $queryKey => $raw) {
             if (!isset($map[$queryKey])) {
-                Clog::write(Registration::LOG, 'Onboarding saveToUser skip unknown key', [
-                    'user_id' => $this->userId,
-                    'key' => $queryKey,
-                ], Clog::NOTICE);
+                Clog::write(
+                    Registration::LOG,
+                    'Onboarding: пропускаю неизвестный ключ «' . $queryKey . '» для user_id=' . $this->userId
+                    . ' — его нет в onboarding_query_keys, в БД не пишем.',
+                    Clog::NOTICE
+                );
                 continue;
             }
             if (!is_string($raw)) {
@@ -232,23 +287,27 @@ class Onboarding
             }
             $value = $this->normalizeValue($queryKey, $raw);
             if ($value === null) {
-                Clog::write(Registration::LOG, 'Onboarding saveToUser skip after normalize', [
-                    'user_id' => $this->userId,
-                    'key' => $queryKey,
-                    'raw' => $raw,
-                ], Clog::NOTICE);
+                Clog::write(
+                    Registration::LOG,
+                    'Onboarding: ключ «' . $queryKey . '» для user_id=' . $this->userId
+                    . ' отброшен после нормализации (сырое значение «' . $raw . '» не подходит для записи).',
+                    Clog::NOTICE
+                );
                 continue;
             }
             $this->upsert($map[$queryKey], $value);
         }
 
         if ($replaceSuccessUrl && self::hasSuccessUrlQueryKey()) {
-            $successKey = self::successQueryKey();
-            if ($successKey !== null && !array_key_exists($successKey, $values)) {
-                Clog::write(Registration::LOG, 'Onboarding saveToUser replaceSuccessUrl: key absent, clear row', [
-                    'user_id' => $this->userId,
-                    'success_key' => $successKey,
-                ], Clog::NOTICE);
+            if ($successUrlKey !== null && !array_key_exists($successUrlKey, $values)) {
+                Clog::write(
+                    Registration::LOG,
+                    'Onboarding: в данных для записи нет query-ключа «' . $successUrlKey . '» '
+                    . '(это referer → target success_url), а режим replace включён.' . "\n"
+                    . 'Поэтому удаляю у user_id=' . $this->userId . ' строку onboarding.target=success_url, '
+                    . 'чтобы после логина не увести на старый URL из прошлой сессии.',
+                    Clog::NOTICE
+                );
                 $this->clearByTarget(self::TARGET_SUCCESS_URL);
             }
         }
@@ -260,20 +319,25 @@ class Onboarding
 
     public function successUrl(): ?string
     {
-        $key = self::successQueryKey();
-        if ($key === null) {
-            Clog::write(Registration::LOG, 'Onboarding successUrl: no success_url in config', [
-                'user_id' => $this->userId,
-            ], Clog::NOTICE);
+        $successUrlKey = self::successUrlQueryKey();
+        if ($successUrlKey === null) {
+            Clog::write(
+                Registration::LOG,
+                'Onboarding: не могу прочитать URL после логина — в конфиге нет ключа с target=success_url.'
+                . ' user_id=' . $this->userId . '.',
+                Clog::NOTICE
+            );
             return null;
         }
 
-        $url = $this->valueByQueryKey($key);
-        Clog::write(Registration::LOG, 'Onboarding successUrl', [
-            'user_id' => $this->userId,
-            'query_key' => $key,
-            'url' => $url,
-        ], Clog::NOTICE);
+        $url = $this->valueByQueryKey($successUrlKey);
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: читаю URL редиректа после логина для user_id=' . $this->userId . '.' . "\n"
+            . 'Query-ключ конфига: «' . $successUrlKey . '» → строка onboarding.target=success_url.' . "\n"
+            . 'Значение: ' . ($url !== null && $url !== '' ? $url : '(нет строки в БД)') . '.',
+            Clog::NOTICE
+        );
 
         return $url;
     }
@@ -290,14 +354,17 @@ class Onboarding
             ->where('target', $target)
             ->delete();
 
-        Clog::write(Registration::LOG, 'Onboarding clearByTarget', [
-            'user_id' => $this->userId,
-            'target' => $target,
-            'had_row' => $existing ? (string) $existing->value : null,
-        ], Clog::NOTICE);
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: удаляю из таблицы onboarding строку target=«' . $target . '» '
+            . 'у user_id=' . $this->userId . '.' . "\n"
+            . ($existing
+                ? 'До удаления там было: «' . (string) $existing->value . '».'
+                : 'Строки и так не было — удалять было нечего.'),
+            Clog::NOTICE
+        );
     }
-
-    public static function successQueryKey(): ?string
+    public static function successUrlQueryKey(): ?string
     {
         if (!self::enabled()) {
             return null;
@@ -318,7 +385,7 @@ class Onboarding
      */
     public static function hasSuccessUrlQueryKey(): bool
     {
-        return self::successQueryKey() !== null;
+        return self::successUrlQueryKey() !== null;
     }
 
     public function valueByQueryKey(string $queryKey): ?string
@@ -338,10 +405,12 @@ class Onboarding
     {
         $row = $this->findRow($spec);
         if (!$row) {
-            Clog::write(Registration::LOG, 'Onboarding read: no row', [
-                'user_id' => $this->userId,
-                'target' => $spec['target'],
-            ], Clog::NOTICE);
+            Clog::write(
+                Registration::LOG,
+                'Onboarding: в таблице onboarding нет строки target=«' . $spec['target'] . '» '
+                . 'для user_id=' . $this->userId . ' — значение отсутствует.',
+                Clog::NOTICE
+            );
             return null;
         }
 
@@ -350,11 +419,12 @@ class Onboarding
             throw new RuntimeException('Onboarding ' . $spec['target'] . ' has empty value');
         }
 
-        Clog::write(Registration::LOG, 'Onboarding read', [
-            'user_id' => $this->userId,
-            'target' => $spec['target'],
-            'value' => $value,
-        ], Clog::NOTICE);
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: прочитал из БД target=«' . $spec['target'] . '» для user_id=' . $this->userId
+            . ': «' . $value . '».',
+            Clog::NOTICE
+        );
 
         return $value;
     }
@@ -378,10 +448,12 @@ class Onboarding
             $out[$row->target] = $value;
         }
 
-        Clog::write(Registration::LOG, 'Onboarding valuesByTarget', [
-            'user_id' => $this->userId,
-            'rows' => $out,
-        ], Clog::NOTICE);
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: все строки onboarding для user_id=' . $this->userId . ': '
+            . self::formatPairs($out) . '.',
+            Clog::NOTICE
+        );
 
         return $out;
     }
@@ -393,21 +465,20 @@ class Onboarding
     {
         $existing = $this->findRow($spec);
         $type = $this->specType($spec);
+        $typeSuffix = $type !== null ? ', type=«' . $type . '»' : '';
 
         if ($existing) {
             DB::table('onboarding')
                 ->where('id', $existing->id)
                 ->update(['value' => $value]);
 
-            $log = [
-                'user_id' => $this->userId,
-                'target' => $spec['target'],
-                'value' => $value,
-            ];
-            if ($type !== null) {
-                $log['type'] = $type;
-            }
-            Clog::write(Registration::LOG, 'Onboarding update', $log, Clog::NOTICE);
+            Clog::write(
+                Registration::LOG,
+                'Onboarding: обновил в БД target=«' . $spec['target'] . '»' . $typeSuffix
+                . ' для user_id=' . $this->userId . '.' . "\n"
+                . 'Было: «' . (string) $existing->value . '» → стало: «' . $value . '».',
+                Clog::NOTICE
+            );
 
             return;
         }
@@ -424,17 +495,13 @@ class Onboarding
 
         DB::table('onboarding')->insert($row);
 
-        $log = [
-            'user_id' => $this->userId,
-            'target' => $spec['target'],
-            'value' => $value,
-        ];
-        if ($type !== null) {
-            $log['type'] = $type;
-        }
-        Clog::write(Registration::LOG, 'Onboarding insert', $log, Clog::NOTICE);
+        Clog::write(
+            Registration::LOG,
+            'Onboarding: создал в БД строку target=«' . $spec['target'] . '»' . $typeSuffix
+            . ' для user_id=' . $this->userId . ' со значением «' . $value . '».',
+            Clog::NOTICE
+        );
     }
-
     /**
      * @param array{target: string, type?: string} $spec
      */
@@ -471,7 +538,7 @@ class Onboarding
             throw new RuntimeException('Onboarding query ' . $queryKey . ' is empty');
         }
 
-        if ($queryKey === self::successQueryKey()) {
+        if ($queryKey === self::successUrlQueryKey()) {
             return $this->normalizeSuccessUrl($trimmed);
         }
 
@@ -530,5 +597,44 @@ class Onboarding
         }
 
         return $url;
+    }
+
+    /**
+     * Пары ключ=значение одной строкой для лога.
+     *
+     * @param array<string, mixed> $pairs
+     */
+    protected static function formatPairs(array $pairs): string
+    {
+        if ($pairs === []) {
+            return '(пусто)';
+        }
+
+        $parts = [];
+        foreach ($pairs as $key => $value) {
+            if (is_array($value) || is_object($value)) {
+                $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+            $parts[] = $key . '=' . (string) $value;
+        }
+
+        return implode(', ', $parts);
+    }
+
+    /**
+     * Карта query-ключ → target из конфига, для лога.
+     */
+    protected static function formatConfiguredKeys(): string
+    {
+        if (!self::enabled()) {
+            return '(onboarding выключен)';
+        }
+
+        $parts = [];
+        foreach (self::queryKeys() as $queryKey => $spec) {
+            $parts[] = $queryKey . '→' . $spec['target'];
+        }
+
+        return $parts === [] ? '(пусто)' : implode(', ', $parts);
     }
 }

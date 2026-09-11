@@ -20,7 +20,7 @@ class RegistrationController extends Controller
      */
     public function login()
     {
-        Clog::write(REG::LOG, 'Login page', Clog::DEBUG);
+        Clog::write(REG::LOG, 'Controller::Login', Clog::DEBUG);
 
         //dd(request()->all());
 
@@ -156,6 +156,7 @@ class RegistrationController extends Controller
     {
         if(REG::user()->isActive()){
             Auth::login(REG::user());
+            REG::recordLoginArtifacts();
             REG::clearAuthCookie();
             return redirect(REG::getSuccessAuthUrl()); 
         }

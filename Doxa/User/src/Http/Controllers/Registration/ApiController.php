@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Doxa\Core\Libraries\Logging\Clog;
 use Doxa\User\Libraries\Registration as REG;
-use Doxa\User\Libraries\UserGeo;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -14,10 +13,6 @@ use Illuminate\Validation\Rules\Password;
 class ApiController extends Controller
 {
     use ResponceTrait;
-
-    public function __construct(
-        private UserGeo $userGeo
-    ) {}
 
     public function login()
     {
@@ -42,11 +37,8 @@ class ApiController extends Controller
             Clog::write(REG::LOG, 'Success login!', Clog::DEBUG);
             REG::clearLoginAttempts();
             REG::setUserFromAuth();
-            Clog::write(REG::LOG, 'Onboarding persist after password login', [
-                'user_id' => REG::user()->id,
-            ], Clog::NOTICE);
-            REG::persistOnboarding(true, true);
-            $this->userGeo->record(REG::user()->id);
+            REG::persistOnboarding(clearSession: true, replaceSuccessUrl: true);
+            REG::recordLoginArtifacts();
             if (!REG::user()->isActive()) {
                 Auth::logout();
                 REG::clearAuthCookie();
@@ -115,10 +107,7 @@ class ApiController extends Controller
                     Clog::write(REG::LOG, 'User has password pending status, will be changed to verification pending.', Clog::DEBUG);
                     REG::setVerificationdPendingStatus();
                 }
-                Clog::write(REG::LOG, 'Onboarding persist pending register', [
-                    'user_id' => REG::user()->id,
-                ], Clog::NOTICE);
-                REG::persistOnboarding(false, false, false);
+                REG::persistOnboarding(clearSession: false, replaceSuccessUrl: false, useSession: false);
                 REG::setAuthCookie('verify');
                 return $this->responceRegistrationInProcess();
             }
@@ -229,7 +218,7 @@ class ApiController extends Controller
             REG::setUserActive();
             Auth::login(REG::user());
             if ($method === 'register') {
-                $this->userGeo->record(REG::user()->id);
+                REG::recordLoginArtifacts();
             }
             REG::clearAuthCookie();
         }
