@@ -730,8 +730,7 @@ class Registration
             case 'email':
                 switch ($method) {
                     case 'register':
-                        $re = Mail::to($this->login)->send(new VerificationEmail($set));
-                        Clog::write(self::LOG, 'Sending verification email: ' . json_encode($re), Clog::NOTICE);
+                        Mail::to($this->login)->send(new VerificationEmail($set));
                         break;
                     case 'recovery':
                         Mail::to($this->login)->send(new RecoveryEmail($set));
@@ -1489,8 +1488,9 @@ class Registration
     protected function recordLoginArtifacts(): void
     {
         $userId = (int) $this->user->id;
-        (new UserGeo())->record($userId);
-        (new AuthSessionService())->recordWebSessionAfterLogin($userId, $this->authSessionContext());
+        $sessions = $this->authSessionService();
+        (new UserGeo())->record($userId, deviceId: $sessions->deviceId());
+        $sessions->recordWebSessionAfterLogin($userId, $this->authSessionContext());
     }
 
     protected function logout()
@@ -1511,7 +1511,15 @@ class Registration
      */
     protected function revokeAuthSessionBeforeLogout(): void
     {
-        (new AuthSessionService())->revokeCurrentWebSession();
+        $this->authSessionService()->revokeCurrentWebSession();
+    }
+
+    /**
+     * Сервис auth-сессий (хост может подменить класс).
+     */
+    protected function authSessionService(): AuthSessionService
+    {
+        return new AuthSessionService();
     }
 
     public static function __callStatic($name, $arguments)

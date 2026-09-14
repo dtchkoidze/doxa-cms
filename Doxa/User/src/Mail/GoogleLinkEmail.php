@@ -18,7 +18,7 @@ class GoogleLinkEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Confirm Google account link',
+            subject: vocab('email.google_link_subject'),
             from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
@@ -26,7 +26,7 @@ class GoogleLinkEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'user::emails.google-link-email',
+            markdown: config('mail.views.google-link-email', 'user::emails.google-link-email'),
             with: $this->data,
         );
     }

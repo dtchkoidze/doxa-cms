@@ -23,7 +23,7 @@
                         <button @click="submitCode()" type="button" :disabled="locked || processing"
                             class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                             <span>{{ locked ? `Try again in ${lockoutCountdown}` : 'Verify' }}</span>
-                            <i v-if="processing" class="ml-2 w-4 h-4 fa-solid fa-spinner fa-spin-pulse"></i>
+                            <ButtonSpinner v-if="processing" />
                         </button>
                     </div>
 
@@ -65,6 +65,7 @@ import FieldError from "./components/FieldError.vue";
 import BannerError from "./components/BannerError.vue";
 import Otp from "./components/Otp.vue";
 import Error from "./components/Error.vue";
+import ButtonSpinner from "./components/ButtonSpinner.vue";
 
 export default {
     props: ['login', 'login_type', 'timer', 'method', 'code_expire_in'],
@@ -75,6 +76,7 @@ export default {
         BannerError,
         Otp,
         Error,
+        ButtonSpinner,
     },
     data() {
         return {

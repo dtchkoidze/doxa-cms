@@ -54,7 +54,15 @@
 
             <!------------ SUBMIT -------------->
             <div class="flex items-center justify-end">
-                <button type="button" class="ml-3 btn-primary" @click="submit()">Save password</button>
+                <button
+                    type="button"
+                    class="ml-3 inline-flex items-center justify-center btn-primary"
+                    :disabled="processing"
+                    @click="submit()"
+                >
+                    <span>Save password</span>
+                    <ButtonSpinner v-if="processing" />
+                </button>
             </div>
 
             <!------------ ERROR -------------->
@@ -85,6 +93,7 @@
 <script>
 import Header from "./components/Header.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
+import ButtonSpinner from "./components/ButtonSpinner.vue";
 
 export default {
     props: ['method'],
@@ -113,6 +122,7 @@ export default {
     components: {
         Header,
         ConfirmModal,
+        ButtonSpinner,
     },
     methods: {
         submit() {
@@ -137,6 +147,7 @@ export default {
                     })
                     .catch(error => {
                         console.log("error: ", error);
+                        this.processing = false;
                     });
             } else {
                 this.processing = false;

@@ -11,27 +11,24 @@ use Illuminate\Mail\Mailables\Envelope;
 
 class AccountDeletionEmail extends Mailable
 {
-
     use Queueable, SerializesModels;
-
 
     public function __construct(public array $data)
     {
-        // dd('RecoveryEmail  . __construct', $data);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Account Deletion Verification Email',
-            from: new Address(config("mail.from.address"), config("mail.from.name")),
+            subject: vocab('email.account_deletion_subject'),
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'user::emails.account-deletion-email',
+            markdown: config('mail.views.account-deletion-email', 'user::emails.account-deletion-email'),
             with: $this->data,
         );
     }

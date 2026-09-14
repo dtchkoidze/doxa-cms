@@ -9,25 +9,26 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Envelope;
 
-class VerificationEmail extends Mailable {
-
+class VerificationEmail extends Mailable
+{
     use Queueable, SerializesModels;
 
-
-    public function __construct(public array $data) {
-        //dump(__METHOD__, $data, env('MAIL_LOG_CHANNEL'));
+    public function __construct(public array $data)
+    {
     }
 
-    public function envelope(): Envelope {
+    public function envelope(): Envelope
+    {
         return new Envelope(
-            subject: 'Verification Email',
-            from: new Address(config("mail.from.address"), config("mail.from.name")),
+            subject: vocab('email.verification_subject'),
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
 
-    public function content(): Content {
+    public function content(): Content
+    {
         return new Content(
-            markdown: 'user::emails.verification-email',
+            markdown: config('mail.views.verification-email', 'user::emails.verification-email'),
             with: $this->data,
         );
     }

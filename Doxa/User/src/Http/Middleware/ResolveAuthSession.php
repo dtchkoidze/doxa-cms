@@ -7,10 +7,12 @@ use Doxa\User\Libraries\AuthSessionService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Если нет session-user — поднимает Auth из mobile Bearer / X-Api-Token.
+ * Для web: отозванный user_auth_sessions ряд снимает Auth и remember-cookie.
  */
 class ResolveAuthSession
 {
@@ -19,6 +21,8 @@ class ResolveAuthSession
     ) {}
 
     /**
+     * Проверяет web/mobile auth-сессию: отозванный web — logout, mobile — 401.
+     *
      * @param  Closure(Request): Response  $next
      */
     public function handle(Request $request, Closure $next): Response
@@ -26,9 +30,14 @@ class ResolveAuthSession
         if (Auth::check()) {
             $userId = (int) Auth::id();
             if ($userId > 0 && $request->hasSession()) {
-                $sessionRowId = $this->authSessions->findActiveWebSessionId($userId, $request->session()->getId());
-                if ($sessionRowId !== null) {
-                    $this->authSessions->markSessionUsed($sessionRowId);
+                $row = $this->authSessions->findWebSessionForRequest($userId);
+                if ($row !== null && $row->revoked_at !== null) {
+                    $this->logoutRevokedWebSession($request);
+
+                    return $next($request);
+                }
+                if ($row !== null) {
+                    $this->authSessions->markWebSessionUsed($row);
                 }
             }
 
@@ -62,6 +71,21 @@ class ResolveAuthSession
         return $next($request);
     }
 
+    /**
+     * Снимает Auth текущей web-сессии и remember-cookie (устройство уже отозвано в списке).
+     */
+    private function logoutRevokedWebSession(Request $request): void
+    {
+        Auth::logoutCurrentDevice();
+        Cookie::queue(Cookie::forget(Auth::guard()->getRecallerName()));
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+
+    /**
+     * Возвращает пользователя провайдера web-guard по id.
+     */
     private function retrieveUser(int $userId): ?Authenticatable
     {
         $provider = Auth::createUserProvider(config('auth.guards.web.provider', 'users'));

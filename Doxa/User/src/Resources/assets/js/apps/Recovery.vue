@@ -30,7 +30,15 @@
 
             <!------------ SUBMIT -------------->
             <div class="flex items-center justify-end">
-                <button type="button" class="ml-3 btn-primary" @click="submit()">Next</button>
+                <button
+                    type="button"
+                    class="ml-3 inline-flex items-center justify-center btn-primary"
+                    :disabled="processing"
+                    @click="submit()"
+                >
+                    <span>Next</span>
+                    <ButtonSpinner v-if="processing" />
+                </button>
             </div>
 
             <BannerError :error="errors.recovery_failed" />
@@ -59,6 +67,7 @@ import Dropdown from './components/DropdownFull.vue';
 import ConfirmModal from "./components/ConfirmModal.vue";
 import FieldError from "./components/FieldError.vue";
 import BannerError from "./components/BannerError.vue";
+import ButtonSpinner from "./components/ButtonSpinner.vue";
 
 export default {
     props: ['roles'],
@@ -80,6 +89,7 @@ export default {
         ConfirmModal,
         FieldError,
         BannerError,
+        ButtonSpinner,
     },
     methods: {
         submit() {
@@ -106,6 +116,7 @@ export default {
                 })
                 .catch(error => {
                     console.log("error: ", error);
+                    this.processing = false;
                 });
             } else {
                 this.processing = false;

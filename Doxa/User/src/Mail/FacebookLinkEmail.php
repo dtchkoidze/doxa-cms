@@ -18,7 +18,7 @@ class FacebookLinkEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Confirm Facebook account link',
+            subject: vocab('email.facebook_link_subject'),
             from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
@@ -26,7 +26,7 @@ class FacebookLinkEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'user::emails.facebook-link-email',
+            markdown: config('mail.views.facebook-link-email', 'user::emails.facebook-link-email'),
             with: $this->data,
         );
     }

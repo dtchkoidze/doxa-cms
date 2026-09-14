@@ -2,10 +2,7 @@
 
 namespace Doxa\Admin\Http\Middleware;
 
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Doxa\Core\Libraries\Logging\Clog;
-use Illuminate\Support\Facades\Route;
 
 class Admin
 {
@@ -28,10 +25,6 @@ class Admin
      */
     public function handle($request, \Closure $next, $guard = 'web')
     {
-
-        //Clog::write('admin', '*');
-        //Clog::write('admin', '--------MIDLEWARE START-------'.Route::currentRouteName().'---------------');
-
         $this->request = $request;
         $this->guard = $guard;
 

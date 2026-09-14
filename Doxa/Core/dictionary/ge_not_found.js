@@ -1,3 +1,4 @@
 export default [
-    "vcb.password"
+    "vcb.password",
+    "vcb.remember_me"
 ];

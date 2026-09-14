@@ -23,7 +23,7 @@ class AddEmailVerificationEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Confirm your email',
+            subject: vocab('email.add_email_verification_subject'),
             from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
@@ -31,7 +31,7 @@ class AddEmailVerificationEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'user::emails.add-email-verification',
+            markdown: config('mail.views.add-email-verification', 'user::emails.add-email-verification'),
             with: $this->data,
         );
     }

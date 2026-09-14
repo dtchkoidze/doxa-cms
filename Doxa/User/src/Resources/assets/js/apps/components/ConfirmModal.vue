@@ -49,7 +49,7 @@
                                     :class="button.style ? 'btn-' + button.style : 'btn-primary'"
                                     :disabled="button.disabled || button.loading">
                                     <div class="flex gap-2 justify-between items-center">
-                                        <i v-if="button.loading" class="fa-solid fa-spinner fa-spin"></i>
+                                        <ButtonSpinner v-if="button.loading" />
                                         <div v-html="button.title"></div>
                                         <div v-if="button.timer && button.timer > 0" class="text-right">
                                             {{ formatTimer(button.timer) }}
@@ -67,7 +67,12 @@
 </template>
 
 <script>
+import ButtonSpinner from "./ButtonSpinner.vue";
+
 export default {
+    components: {
+        ButtonSpinner,
+    },
     data() {
         return {
             modalOpen: false,

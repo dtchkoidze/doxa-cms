@@ -9,7 +9,7 @@
 
             <!------------ Email -------------->
             <div>
-                <label class="block mb-1 text-sm font-medium" for="email">Email Address</label>
+                <label class="block mb-1 text-sm font-medium" for="email">Email</label>
                 <input class="w-full form-input" type="email" v-model="form_data.email" name="email" id="email"
                     autocomplete="email" inputmode="email"
                     :disabled="locked"
@@ -40,13 +40,13 @@
                 <div class="">
                     <label class="flex items-center">
                         <input type="checkbox" class="form-checkbox" v-model="form_data.remember" :disabled="locked" />
-                        <span class="ml-2 text-sm">Remember Me</span>
+                        <span class="ml-2 text-sm">{{ vocab('vcb.remember_me') }}</span>
                     </label>
                 </div>
                 <button @click="submit()" type="button" :disabled="locked || processing"
                     class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span>{{ locked ? `Try again in ${lockoutCountdown}` : 'Sign In' }}</span>
-                    <i v-if="processing" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
+                    <ButtonSpinner v-if="processing" />
                 </button>
             </div>
 
@@ -98,6 +98,7 @@ import BannerError from "./components/BannerError.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 import GoogleAuthButton from "./components/GoogleAuthButton.vue";
 import FacebookAuthButton from "./components/FacebookAuthButton.vue";
+import ButtonSpinner from "./components/ButtonSpinner.vue";
 
 export default {
     props: {
@@ -130,6 +131,7 @@ export default {
         ConfirmModal,
         GoogleAuthButton,
         FacebookAuthButton,
+        ButtonSpinner,
     },
     computed: {
         apiInWindow() {

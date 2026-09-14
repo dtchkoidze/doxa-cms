@@ -5,24 +5,24 @@ namespace Doxa\User\Libraries;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Records user events with IP/User-Agent (e.g. logins) and provides methods for analysis.
+ * Журнал входов в user_logins: IP, UA, страна (CF-IPCountry), устройство.
  */
 class UserGeo
 {
     public const TABLE = 'user_logins';
 
     /**
-     * Record a login event. Uses current request IP/UA if not provided.
+     * Пишет строку входа. IP/UA/страна — из текущего запроса, если не переданы.
      *
      * @param int $userId
      * @param string|null $ip
      * @param string|null $userAgent
+     * @param string|null $deviceId uuid cookie auth_device
      * @return void
      */
-    public function record(int $userId, ?string $ip = null, ?string $userAgent = null): void
+    public function record(int $userId, ?string $ip = null, ?string $userAgent = null, ?string $deviceId = null): void
     {
         if ($ip === null) {
-            // Cloudflare provides real user IP in CF-Connecting-IP header
             $ip = request()->header('CF-Connecting-IP') ?? request()->ip();
         }
         $userAgent = $userAgent ?? request()->userAgent();
@@ -31,12 +31,14 @@ class UserGeo
             'user_id' => $userId,
             'ip' => $ip ? substr($ip, 0, 45) : null,
             'user_agent' => $userAgent ? substr($userAgent, 0, 512) : null,
+            'country' => $this->requestCountry(),
+            'device_id' => $deviceId,
             'logged_at' => now(),
         ]);
     }
 
     /**
-     * Get login history for a user (newest first).
+     * Возвращает историю входов пользователя (новые сверху).
      *
      * @param int $userId
      * @param int|null $limit
@@ -56,7 +58,7 @@ class UserGeo
     }
 
     /**
-     * Get recent logins across all users (newest first).
+     * Возвращает последние входы по всем пользователям (новые сверху).
      *
      * @param int $limit
      * @return \Illuminate\Support\Collection
@@ -67,5 +69,51 @@ class UserGeo
             ->orderByDesc('logged_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Возвращает ISO2 страны последнего входа по каждому device_id пользователя.
+     *
+     * @return array<string, string>
+     */
+    public function latestCountryByDeviceId(int $userId): array
+    {
+        $rows = DB::table(self::TABLE)
+            ->where('user_id', $userId)
+            ->whereNotNull('device_id')
+            ->where('device_id', '!=', '')
+            ->whereNotNull('country')
+            ->where('country', '!=', '')
+            ->orderByDesc('logged_at')
+            ->get(['device_id', 'country']);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $deviceId = (string) $row->device_id;
+            if ($deviceId === '' || isset($map[$deviceId])) {
+                continue;
+            }
+            $map[$deviceId] = (string) $row->country;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Возвращает ISO2 из CF-IPCountry или null, если заголовка нет / служебный код.
+     */
+    private function requestCountry(): ?string
+    {
+        $header = request()->header('CF-IPCountry');
+        if (!is_string($header)) {
+            return null;
+        }
+
+        $code = strtolower(trim($header));
+        if (!preg_match('/^[a-z]{2}$/', $code) || $code === 'xx' || $code === 't1') {
+            return null;
+        }
+
+        return $code;
     }
 }

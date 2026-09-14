@@ -1,6 +1,7 @@
 {
     "vocabulary": [
-        "password"
+        "password",
+        "remember_me"
     ],
     "text_blocks": []
 }

@@ -84,6 +84,37 @@ loadDictionary(locale).finally(() => {
 - Не подмешивать словарь Doxa в словарь хоста и наоборот.
 - Не путать URL: хост — `/dictionary/{lang}-{scope}.json`; Doxa — `/doxa/dictionary/{lang}.json`.
 
-## Расширение скана
+## Связь с хостом (Eventer)
 
-Новые каталоги (например admin) — в `Doxa/Core/config/dictionary.php` → `scan_paths`, затем снова scan + build.
+```bash
+php artisan dictionary:sync
+php artisan dictionary:sync --skip-doxa
+php artisan dictionary:sync --add-rows
+php artisan dictionary:sync --add-rows --lng=en
+```
+
+`dictionary:sync` = `dictionary:scan` → `dictionary:build` (те же три опции).
+
+По отдельности:
+
+```bash
+php artisan dictionary:scan          # хост vue-keys + doxa:dictionary-scan
+php artisan dictionary:scan --skip-doxa
+
+php artisan dictionary:build         # хост public/dictionary + not_found + doxa:dictionary-build
+php artisan dictionary:build --skip-doxa
+php artisan dictionary:build --add-rows
+php artisan dictionary:build --add-rows --lng=en
+```
+
+`--add-rows` (у **build** / **sync**): после билдов хоста и Doxa перезаписывает `export/dictionary_rows.json` из `*_not_found.js` (хост + Doxa), значения `""`. Пишет файл всегда. Без `--lng` — все locale с not_found.
+
+После заполнения текстов в `dictionary_rows.json`:
+
+```bash
+php artisan dictionary:import-rows --skip-existing --rebuild
+```
+
+`--rebuild` — после импорта в БД снова `dictionary:build` (JSON в `public`).
+
+Vite больше не сканирует словарь.

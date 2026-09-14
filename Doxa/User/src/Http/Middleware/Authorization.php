@@ -203,6 +203,13 @@ class Authorization
                         $registration->login = Auth::user()->email;
                         $registration->getUserById(Auth::id());
                         break;
+                    // Recovery: активный пользователь уже проверен выше, cookie auth_data разобрана.
+                    // status остаётся ready (1), verification pending не ставим.
+                    case 'recovery':
+                        if (Registration::user()->hasPasswordPendingStatus()) {
+                            return $this->_responce('auth.password', ['method' => Registration::method()]);
+                        }
+                        break;
                     default:
                         $user = Registration::user();
                         if ($user->hasVericationPendingStatus()) {

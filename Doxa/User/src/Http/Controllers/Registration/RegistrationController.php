@@ -126,9 +126,18 @@ class RegistrationController extends Controller
         return view('user::auth.password', $data);
     }
 
+    /**
+     * Logout, then redirect to query return (internal path) or back to Referer.
+     */
     public function logout()
     {
         REG::logout();
+
+        $target = request('return');
+        if (is_string($target) && str_starts_with($target, '/') && !str_starts_with($target, '//')) {
+            return redirect()->to($target);
+        }
+
         return redirect()->back();
     }
 

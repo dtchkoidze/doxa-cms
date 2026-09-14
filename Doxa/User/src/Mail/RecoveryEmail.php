@@ -11,27 +11,24 @@ use Illuminate\Mail\Mailables\Envelope;
 
 class RecoveryEmail extends Mailable
 {
-
     use Queueable, SerializesModels;
-
 
     public function __construct(public array $data)
     {
-        // dd('RecoveryEmail  . __construct', $data);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Password Recovery Email',
-            from: new Address(config("mail.from.address"), config("mail.from.name")),
+            subject: vocab('email.recovery_subject'),
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'user::emails.recovery-email',
+            markdown: config('mail.views.recovery-email', 'user::emails.recovery-email'),
             with: $this->data,
         );
     }

@@ -23,9 +23,9 @@
             </div>
 
             <div class="flex justify-end">
-                <button type="button" class="btn-primary" :disabled="processing" @click="linkWithPassword()">
+                <button type="button" class="inline-flex items-center justify-center btn-primary" :disabled="processing" @click="linkWithPassword()">
                     <span>Link with password</span>
-                    <i v-if="processing === 'password'" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
+                    <ButtonSpinner v-if="processing === 'password'" />
                 </button>
             </div>
 
@@ -42,7 +42,7 @@
                 class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
                 :disabled="processing" @click="sendMagic()">
                 <span>Send confirmation link to email</span>
-                <i v-if="processing === 'magic'" class="w-4 h-4 ml-2 fa-solid fa-spinner fa-spin-pulse"></i>
+                <ButtonSpinner v-if="processing === 'magic'" />
             </button>
 
             <BannerError :error="errors.form" />
@@ -61,10 +61,11 @@
 import Header from "./components/Header.vue";
 import FieldError from "./components/FieldError.vue";
 import BannerError from "./components/BannerError.vue";
+import ButtonSpinner from "./components/ButtonSpinner.vue";
 
 export default {
     props: ['email'],
-    components: { Header, FieldError, BannerError },
+    components: { Header, FieldError, BannerError, ButtonSpinner },
     data() {
         return {
             password: '',
