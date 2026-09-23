@@ -40,15 +40,28 @@
 
             <button type="button"
                 class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
-                :disabled="processing" @click="sendMagic()">
-                <span>Send confirmation link to email</span>
-                <ButtonSpinner v-if="processing === 'magic'" />
+                :disabled="processing" @click="sendCode()">
+                <span>{{ codeSent ? 'Resend confirmation code' : 'Send confirmation code to email' }}</span>
+                <ButtonSpinner v-if="processing === 'send'" />
             </button>
 
-            <BannerError :error="errors.form" />
-            <div v-if="successMessage" class="p-3 text-sm text-green-700 bg-green-50 rounded dark:bg-green-900/30 dark:text-green-300">
-                {{ successMessage }}
+            <div v-if="codeSent" class="space-y-3">
+                <div v-if="successMessage" class="p-3 text-sm text-green-700 bg-green-50 rounded dark:bg-green-900/30 dark:text-green-300">
+                    {{ successMessage }}
+                </div>
+                <div>
+                    <Otp />
+                    <FieldError :error="errors.code" />
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" class="inline-flex items-center justify-center btn-primary" :disabled="processing" @click="verifyCode()">
+                        <span>Verify code</span>
+                        <ButtonSpinner v-if="processing === 'verify'" />
+                    </button>
+                </div>
             </div>
+
+            <BannerError :error="errors.form" />
 
             <div class="pt-4 text-sm text-center">
                 <a class="text-violet-500 hover:underline" href="/auth/facebook/link/cancel">Cancel</a>
@@ -62,17 +75,21 @@ import Header from "./components/Header.vue";
 import FieldError from "./components/FieldError.vue";
 import BannerError from "./components/BannerError.vue";
 import ButtonSpinner from "./components/ButtonSpinner.vue";
+import Otp from "./components/Otp.vue";
 
 export default {
     props: ['email'],
-    components: { Header, FieldError, BannerError, ButtonSpinner },
+    components: { Header, FieldError, BannerError, ButtonSpinner, Otp },
     data() {
         return {
             password: '',
+            code: '',
             processing: false,
+            codeSent: false,
             successMessage: '',
             errors: {
                 password: '',
+                code: '',
                 form: '',
             },
         };
@@ -108,14 +125,18 @@ export default {
                     this.processing = false;
                 });
         },
-        sendMagic() {
+        sendCode() {
             this.errors.form = '';
+            this.errors.code = '';
             this.successMessage = '';
-            this.processing = 'magic';
+            this.processing = 'send';
             axios.postForm('/auth/facebook/link/magic')
                 .then(response => {
                     if (response.data.success) {
+                        this.codeSent = true;
                         this.successMessage = response.data.message;
+                        this.$emitter.emit('clear-otp', true);
+                        this.code = '';
                     } else {
                         this.errors.form = response.data.error || response.data.message || 'Failed';
                     }
@@ -126,6 +147,45 @@ export default {
                     this.processing = false;
                 });
         },
+        verifyCode() {
+            this.errors.code = '';
+            this.errors.form = '';
+            if (!this.code || this.code.length < 6) {
+                this.errors.code = 'Verification code is required';
+                return;
+            }
+            this.processing = 'verify';
+            axios.postForm('/auth/facebook/link/verify-code', { code: this.code })
+                .then(response => {
+                    if (response.data.redirect) {
+                        window.location.href = response.data.redirect;
+                        return;
+                    }
+                    if (!response.data.success) {
+                        if (response.data.errors && response.data.errors.code) {
+                            const c = response.data.errors.code;
+                            this.errors.code = Array.isArray(c) ? c.join(', ') : c;
+                        } else {
+                            this.errors.form = response.data.error || response.data.message || 'Failed';
+                        }
+                    }
+                    this.processing = false;
+                })
+                .catch(() => {
+                    this.errors.form = 'Request failed';
+                    this.processing = false;
+                });
+        },
+        setCode(code) {
+            this.code = code;
+            this.errors.code = '';
+        },
+    },
+    mounted() {
+        this.$emitter.on('set-otp', this.setCode);
+    },
+    beforeUnmount() {
+        this.$emitter.off('set-otp', this.setCode);
     },
 };
 </script>

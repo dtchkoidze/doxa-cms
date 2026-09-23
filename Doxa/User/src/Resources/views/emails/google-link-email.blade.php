@@ -1,7 +1,7 @@
 @component('mail::message')
 {!! textblock('email.google_link', [
     'email' => $email,
-    'link' => $link,
-    'expires_minutes' => $expires_minutes,
+    'code' => $code,
+    'code_expire_in' => $code_expire_in,
 ]) !!}
 @endcomponent

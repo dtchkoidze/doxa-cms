@@ -113,13 +113,27 @@ class GoogleController extends Controller
         return $this->jsonRespond($result);
     }
 
-    public function magicLink(string $token)
+    /**
+     * Подтверждение привязки кодом из письма.
+     */
+    public function verifyLinkCode()
     {
         $this->ensureEnabled();
 
-        $result = $this->socialAuth->linkWithMagicToken($token);
+        $validator = Validator::make(request()->all(), [
+            'code' => 'required|string',
+        ]);
 
-        return $this->respond($result);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ]);
+        }
+
+        $result = $this->socialAuth->linkWithCode((string) request('code'), self::PROVIDER);
+
+        return $this->jsonRespond($result);
     }
 
     public function cancelLink()

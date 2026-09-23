@@ -41,7 +41,6 @@ class SocialAuthService
                 'pending_session_key' => 'google_auth_pending',
                 'magic_cache_prefix' => 'google_link:',
                 'link_route' => 'auth.google.link',
-                'magic_route' => 'auth.google.link.magic',
                 'mail' => GoogleLinkEmail::class,
                 'label' => 'Google',
             ],
@@ -51,7 +50,6 @@ class SocialAuthService
                 'pending_session_key' => 'facebook_auth_pending',
                 'magic_cache_prefix' => 'facebook_link:',
                 'link_route' => 'auth.facebook.link',
-                'magic_route' => 'auth.facebook.link.magic',
                 'mail' => FacebookLinkEmail::class,
                 'label' => 'Facebook',
             ],
@@ -334,6 +332,8 @@ class SocialAuthService
     }
 
     /**
+     * Шлёт на email код подтверждения привязки соц.аккаунта (не ссылку).
+     *
      * @return array{action: string, message?: string}
      */
     public function sendMagicLink(string $providerName): array
@@ -361,68 +361,101 @@ class SocialAuthService
             return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
         }
 
-        $token = Str::random(64);
-        Cache::put($provider['magic_cache_prefix'] . $token, [
+        $plainCode = (string) random_int(100000, 999999);
+        Cache::put($this->linkCodeCacheKey($providerName, (int) $user->id), [
+            'secret' => Hash::make($plainCode),
             'user_id' => $user->id,
             'social_id' => $socialId,
             'email' => $pending['email'],
             'provider' => $providerName,
         ], now()->addMinutes(self::MAGIC_TTL_MINUTES));
 
-        $url = route($provider['magic_route'], ['token' => $token]);
         $mailClass = $provider['mail'];
-
         Mail::to($user->email)->send(new $mailClass([
             'email' => $user->email,
-            'link' => $url,
-            'expires_minutes' => self::MAGIC_TTL_MINUTES,
+            'code' => $plainCode,
+            'code_expire_in' => self::MAGIC_TTL_MINUTES,
             'provider_label' => $provider['label'],
         ]));
 
-        Clog::write($provider['log'], 'Magic link sent to ' . $user->email, Clog::NOTICE);
+        Clog::write($provider['log'], 'Link confirmation code sent to ' . $user->email, Clog::NOTICE);
 
         return [
             'action' => 'ok',
-            'message' => 'We sent a confirmation link to ' . $user->email . '. It is valid for ' . self::MAGIC_TTL_MINUTES . ' minutes.',
+            'message' => 'We sent a confirmation code to ' . $user->email . '. It is valid for ' . self::MAGIC_TTL_MINUTES . ' minutes.',
         ];
     }
 
     /**
-     * @return array{action: string, url?: string, message?: string}
+     * Подтверждает привязку кодом из письма.
+     *
+     * @return array{action: string, url?: string, message?: string, errors?: array<string, string>}
      */
-    public function linkWithMagicToken(string $token): array
+    public function linkWithCode(string $code, string $providerName): array
     {
-        $payload = null;
-        $providerName = null;
-
-        foreach ($this->providers() as $name => $provider) {
-            if (!self::isAuthEnabled($name)) {
-                continue;
-            }
-            $payload = Cache::pull($provider['magic_cache_prefix'] . $token);
-            if ($payload) {
-                $providerName = $name;
-                break;
-            }
-        }
-
-        if (!$payload || empty($payload['user_id']) || empty($payload['social_id']) || !$providerName) {
-            return ['action' => 'error', 'message' => 'Link is invalid or expired.'];
+        if (!self::isAuthEnabled($providerName)) {
+            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
         }
 
         $provider = $this->provider($providerName);
-        $user = User::find($payload['user_id']);
+        $idColumn = $provider['id_column'];
+        $pending = $this->getPending($providerName);
+
+        if (!$pending) {
+            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+        }
+
+        $userId = (int) ($pending['user_id'] ?? 0);
+        if ($userId < 1) {
+            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+        }
+
+        $cacheKey = $this->linkCodeCacheKey($providerName, $userId);
+        $payload = Cache::get($cacheKey);
+        if (!is_array($payload) || empty($payload['secret']) || empty($payload['social_id'])) {
+            return [
+                'action' => 'error',
+                'errors' => ['code' => vocab('verification_code_expired')],
+            ];
+        }
+
+        $code = trim($code);
+        if ($code === '' || !Hash::check($code, $payload['secret'])) {
+            return [
+                'action' => 'error',
+                'errors' => ['code' => vocab('invalid_verification_code')],
+            ];
+        }
+
+        Cache::forget($cacheKey);
+
+        $user = User::find($userId);
         if (!$user) {
+            $this->clearPending($providerName);
             return ['action' => 'error', 'message' => 'User not found.'];
         }
 
-        $this->storePending($providerName, [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            $provider['id_column'] => $payload['social_id'],
-        ]);
-
         return $this->completeLink($user, (string) $payload['social_id'], $providerName);
+    }
+
+    /**
+     * Ключ кеша кода привязки для пользователя и провайдера.
+     */
+    private function linkCodeCacheKey(string $providerName, int $userId): string
+    {
+        $provider = $this->provider($providerName);
+
+        return $provider['magic_cache_prefix'] . 'code:' . $userId;
+    }
+
+    /**
+     * @deprecated Ссылка больше не используется — оставлен для старых писем, всегда ошибка.
+     *
+     * @return array{action: string, message?: string}
+     */
+    public function linkWithMagicToken(string $token): array
+    {
+        return ['action' => 'error', 'message' => 'This confirmation link is no longer valid. Request a new code from the link page.'];
     }
 
     /**
