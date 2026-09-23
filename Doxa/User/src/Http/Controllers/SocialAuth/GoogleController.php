@@ -174,6 +174,16 @@ class GoogleController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $result['message'] ?? 'OK',
+                'timer' => $result['timer'] ?? 0,
+                'confirmation' => $result['confirmation'] ?? null,
+            ]);
+        }
+
+        if (($result['action'] ?? '') === 'wait') {
+            return response()->json([
+                'success' => false,
+                'timer' => $result['timer'] ?? 0,
+                'confirmation' => $result['confirmation'] ?? null,
             ]);
         }
 

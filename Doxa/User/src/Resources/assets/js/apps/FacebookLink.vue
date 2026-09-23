@@ -1,5 +1,7 @@
 <template>
     <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
+        <ConfirmModal />
+
         <Header title="Link Facebook account"></Header>
 
         <div class="mb-4 text-sm text-gray-600 dark:text-gray-300">
@@ -38,28 +40,45 @@
                 </div>
             </div>
 
-            <button type="button"
-                class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
-                :disabled="processing" @click="sendCode()">
-                <span>{{ codeSent ? 'Resend confirmation code' : 'Send confirmation code to email' }}</span>
-                <ButtonSpinner v-if="processing === 'send'" />
-            </button>
+            <template v-if="!codeSent">
+                <button type="button"
+                    class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+                    :disabled="processing" @click="sendCode()">
+                    <span>Send confirmation code to email</span>
+                    <ButtonSpinner v-if="processing === 'send'" />
+                </button>
+            </template>
 
-            <div v-if="codeSent" class="space-y-3">
-                <div v-if="successMessage" class="p-3 text-sm text-green-700 bg-green-50 rounded dark:bg-green-900/30 dark:text-green-300">
-                    {{ successMessage }}
+            <template v-else>
+                <div class="mb-2 sm">
+                    Verification instructions have been sent to {{ email }}. Enter verification code below.
+                    Code valid for {{ codeExpireIn }} minutes.
                 </div>
-                <div>
-                    <Otp />
-                    <FieldError :error="errors.code" />
+
+                <div class="flex flex-col justify-between space-y-3 items-left">
+                    <div class="my-4">
+                        <Otp />
+                        <FieldError :error="errors.code" />
+                    </div>
+                    <div class="flex justify-start w-full">
+                        <button @click="verifyCode()" type="button" :disabled="processing"
+                            class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span>Verify</span>
+                            <ButtonSpinner v-if="processing === 'verify'" />
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col mt-4 space-y-1 text-sm">
+                        <div class="flex justify-between">
+                            <span>Did not receive verification message?</span>
+                            <a v-if="resend_timer <= 0" href="#" class="link" @click.prevent="sendCode()">Resend
+                                code</a>
+                        </div>
+
+                        <span v-if="resend_timer > 0">Resend code in {{ formatResendTimer(resend_timer) }}.</span>
+                    </div>
                 </div>
-                <div class="flex justify-end">
-                    <button type="button" class="inline-flex items-center justify-center btn-primary" :disabled="processing" @click="verifyCode()">
-                        <span>Verify code</span>
-                        <ButtonSpinner v-if="processing === 'verify'" />
-                    </button>
-                </div>
-            </div>
+            </template>
 
             <BannerError :error="errors.form" />
 
@@ -76,17 +95,20 @@ import FieldError from "./components/FieldError.vue";
 import BannerError from "./components/BannerError.vue";
 import ButtonSpinner from "./components/ButtonSpinner.vue";
 import Otp from "./components/Otp.vue";
+import ConfirmModal from "./components/ConfirmModal.vue";
 
 export default {
     props: ['email'],
-    components: { Header, FieldError, BannerError, ButtonSpinner, Otp },
+    components: { Header, FieldError, BannerError, ButtonSpinner, Otp, ConfirmModal },
     data() {
         return {
             password: '',
             code: '',
             processing: false,
             codeSent: false,
-            successMessage: '',
+            codeExpireIn: 15,
+            resend_timer: 0,
+            resend_interval: null,
             errors: {
                 password: '',
                 code: '',
@@ -98,7 +120,6 @@ export default {
         linkWithPassword() {
             this.errors.password = '';
             this.errors.form = '';
-            this.successMessage = '';
             if (!this.password) {
                 this.errors.password = 'Password is required';
                 return;
@@ -126,18 +147,34 @@ export default {
                 });
         },
         sendCode() {
+            if (this.resend_timer > 0) {
+                return;
+            }
             this.errors.form = '';
             this.errors.code = '';
-            this.successMessage = '';
             this.processing = 'send';
             axios.postForm('/auth/facebook/link/magic')
                 .then(response => {
+                    if (response.data.confirmation) {
+                        this.$emitter.emit('open-confirm-modal', {
+                            ...response.data.confirmation,
+                            parent: this,
+                        });
+                    }
                     if (response.data.success) {
                         this.codeSent = true;
-                        this.successMessage = response.data.message;
                         this.$emitter.emit('clear-otp', true);
                         this.code = '';
-                    } else {
+                        if (response.data.timer) {
+                            clearInterval(this.resend_interval);
+                            this.resend_timer = response.data.timer;
+                            this.incrementCodeTimer();
+                        }
+                    } else if (response.data.timer) {
+                        clearInterval(this.resend_interval);
+                        this.resend_timer = response.data.timer;
+                        this.incrementCodeTimer();
+                    } else if (!response.data.confirmation) {
                         this.errors.form = response.data.error || response.data.message || 'Failed';
                     }
                     this.processing = false;
@@ -180,12 +217,28 @@ export default {
             this.code = code;
             this.errors.code = '';
         },
+        incrementCodeTimer() {
+            this.resend_interval = setInterval(() => {
+                if (this.resend_timer > 0) {
+                    this.resend_timer -= 1;
+                }
+            }, 1000);
+        },
+        formatResendTimer(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const paddedSeconds = seconds < 10 ? '0' + seconds : seconds;
+            return `${minutes}:${paddedSeconds}`;
+        },
     },
     mounted() {
         this.$emitter.on('set-otp', this.setCode);
     },
     beforeUnmount() {
         this.$emitter.off('set-otp', this.setCode);
+        if (this.resend_interval) {
+            clearInterval(this.resend_interval);
+        }
     },
 };
 </script>

@@ -333,8 +333,9 @@ class SocialAuthService
 
     /**
      * Шлёт на email код подтверждения привязки соц.аккаунта (не ссылку).
+     * Лимиты resend — config/registration.php (как у регистрации).
      *
-     * @return array{action: string, message?: string}
+     * @return array{action: string, message?: string, timer?: int, confirmation?: array<string, mixed>}
      */
     public function sendMagicLink(string $providerName): array
     {
@@ -361,28 +362,61 @@ class SocialAuthService
             return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
         }
 
+        $userId = (int) $user->id;
+        $timer = $this->getLinkResendTimer($providerName, $userId);
+        if ($timer > 0) {
+            return [
+                'action' => 'wait',
+                'timer' => $timer,
+                'confirmation' => [
+                    'type' => 'warning',
+                    'title' => 'To often!',
+                    'message' => 'You can\'t resend code too often. Wait please while timer will be finished.',
+                    'buttons' => [
+                        ['title' => 'Resend code', 'style' => 'primary', 'callback' => 'sendCode', 'timer' => $timer],
+                        ['title' => 'Cancel', 'type' => 'cancel'],
+                    ],
+                ],
+            ];
+        }
+
         $plainCode = (string) random_int(100000, 999999);
-        Cache::put($this->linkCodeCacheKey($providerName, (int) $user->id), [
+        $expireMinutes = $this->linkCodeExpireMinutes();
+        Cache::put($this->linkCodeCacheKey($providerName, $userId), [
             'secret' => Hash::make($plainCode),
             'user_id' => $user->id,
             'social_id' => $socialId,
             'email' => $pending['email'],
             'provider' => $providerName,
-        ], now()->addMinutes(self::MAGIC_TTL_MINUTES));
+            'sent_at' => time(),
+        ], now()->addMinutes(max($expireMinutes, (int) ceil($this->linkResendRateLimitTimeMinutes()))));
 
         $mailClass = $provider['mail'];
         Mail::to($user->email)->send(new $mailClass([
             'email' => $user->email,
             'code' => $plainCode,
-            'code_expire_in' => self::MAGIC_TTL_MINUTES,
+            'code_expire_in' => $expireMinutes,
             'provider_label' => $provider['label'],
         ]));
 
+        $this->checkAndIncrementLinkResendAttempts($userId);
+
         Clog::write($provider['log'], 'Link confirmation code sent to ' . $user->email, Clog::NOTICE);
+
+        $resendTimer = $this->getLinkResendTimer($providerName, $userId);
 
         return [
             'action' => 'ok',
-            'message' => 'We sent a confirmation code to ' . $user->email . '. It is valid for ' . self::MAGIC_TTL_MINUTES . ' minutes.',
+            'timer' => $resendTimer,
+            'message' => 'We sent a confirmation code to ' . $user->email . '. It is valid for ' . $expireMinutes . ' minutes.',
+            'confirmation' => [
+                'type' => 'success',
+                'title' => 'Code sent',
+                'message' => 'Code has been sent to your email. Code valid for ' . $expireMinutes . ' minutes.',
+                'buttons' => [
+                    ['title' => 'OK', 'type' => 'cancel'],
+                ],
+            ],
         ];
     }
 
@@ -398,7 +432,6 @@ class SocialAuthService
         }
 
         $provider = $this->provider($providerName);
-        $idColumn = $provider['id_column'];
         $pending = $this->getPending($providerName);
 
         if (!$pending) {
@@ -436,6 +469,70 @@ class SocialAuthService
         }
 
         return $this->completeLink($user, (string) $payload['social_id'], $providerName);
+    }
+
+    /**
+     * Секунды до следующей разрешённой отправки (как REG::getResendCodeTimer).
+     */
+    private function getLinkResendTimer(string $providerName, int $userId): int
+    {
+        $payload = Cache::get($this->linkCodeCacheKey($providerName, $userId));
+        if (!is_array($payload) || empty($payload['sent_at'])) {
+            return 0;
+        }
+
+        $rateLimitDelayFlag = Cache::get($this->linkResendRateLimitDelayKey($userId), 0);
+        $delayMinutes = $rateLimitDelayFlag > 0
+            ? $this->linkResendRateLimitTimeMinutes()
+            : $this->linkResendDelayMinutes();
+
+        $timer = (int) $payload['sent_at'] + (int) ceil($delayMinutes * 60) - time();
+        if ($timer <= 0) {
+            return 0;
+        }
+
+        return $timer;
+    }
+
+    /**
+     * Счётчик попыток resend — те же ключи cache, что у регистрации.
+     */
+    private function checkAndIncrementLinkResendAttempts(int $userId): void
+    {
+        $cacheKey = 'verification_code_resend_counter_' . $userId;
+        $timeLimitSeconds = (int) ceil($this->linkResendRateLimitTimeMinutes() * 60);
+        $attempts = (int) Cache::get($cacheKey, 0);
+        $attempts++;
+        Cache::put($cacheKey, $attempts, $timeLimitSeconds);
+
+        if ($attempts === $this->linkResendRateLimitMaxAttempts()) {
+            Cache::put($this->linkResendRateLimitDelayKey($userId), 1, $timeLimitSeconds);
+        }
+    }
+
+    private function linkResendRateLimitDelayKey(int $userId): string
+    {
+        return 'verification_code_rate_limit_delay_' . $userId;
+    }
+
+    private function linkResendDelayMinutes(): float
+    {
+        return (float) (config('registration.verification_code_delay') ?? 1);
+    }
+
+    private function linkResendRateLimitMaxAttempts(): int
+    {
+        return (int) (config('registration.resend_code_rate_limit_max_attempts') ?? 3);
+    }
+
+    private function linkResendRateLimitTimeMinutes(): float
+    {
+        return (float) (config('registration.resend_code_rate_limit_time') ?? 10);
+    }
+
+    private function linkCodeExpireMinutes(): int
+    {
+        return (int) (config('registration.verification_code_expire_in') ?? self::MAGIC_TTL_MINUTES);
     }
 
     /**
