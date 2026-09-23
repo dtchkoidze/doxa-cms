@@ -24,14 +24,17 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2"
   },
   "src/Resources/assets/css/user.css": {
-    "file": "assets/user-AC00jxjt.css",
+    "file": "assets/user-Cy6BNlkJ.css",
     "src": "src/Resources/assets/css/user.css",
     "isEntry": true
   },
   "src/Resources/assets/js/user.js": {
-    "file": "assets/user-xH91Lvao.js",
+    "file": "assets/user-KYtzO1_p.js",
     "name": "user",
     "src": "src/Resources/assets/js/user.js",
-    "isEntry": true
+    "isEntry": true,
+    "css": [
+      "assets/user-DLV5jbVi.css"
+    ]
   }
 }

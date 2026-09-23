@@ -170,6 +170,11 @@ export default {
                 }
                 axios.postForm(`auth/api/login`, this.form_data)
                     .then(response => {
+                        if (response.data.needs_2fa && response.data.redirect) {
+                            this.clearLockout();
+                            window.location.href = response.data.redirect;
+                            return;
+                        }
                         if (response.data.success) {
                             this.clearLockout();
                             this.afterLogin();
@@ -205,6 +210,11 @@ export default {
                 password: this.form_data.password,
             })
                 .then(response => {
+                    if (response.data.needs_2fa && response.data.redirect) {
+                        this.clearLockout();
+                        window.location.href = response.data.redirect;
+                        return;
+                    }
                     if (response.data.success && response.data.token) {
                         this.clearLockout();
                         localStorage.setItem(this.tokenStorageKey(), response.data.token);

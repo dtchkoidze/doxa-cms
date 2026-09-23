@@ -4,6 +4,7 @@ namespace Doxa\User\Http\Controllers\Auth;
 
 use Doxa\User\Libraries\AuthSessionService;
 use Doxa\User\Libraries\Registration as REG;
+use Doxa\User\Libraries\TwoFactorService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
@@ -16,6 +17,7 @@ class MobileAuthController
 {
     public function __construct(
         private readonly AuthSessionService $authSessions,
+        private readonly TwoFactorService $twoFactor,
     ) {}
 
     /**
@@ -72,6 +74,16 @@ class MobileAuthController
                 'success' => false,
                 'message' => 'Auth session context required',
             ], 422);
+        }
+
+        if ($this->twoFactor->hasConfirmedMethod((int) $user->getAuthIdentifier())) {
+            $this->twoFactor->storePendingLogin((int) $user->getAuthIdentifier(), false, 'mobile_token');
+
+            return response()->json([
+                'success' => true,
+                'needs_2fa' => true,
+                'redirect' => route('auth.two_factor'),
+            ]);
         }
 
         // Session cookie нужна для HTML (/welcome): document load не шлёт Bearer из localStorage

@@ -42,6 +42,7 @@ class UserServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/onboarding.php', 'onboarding');
         $this->mergeConfigFrom(__DIR__ . '/../../config/auth_sessions.php', 'user.auth_sessions');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/two_factor.php', 'user.two_factor');
 
         //$this->registerBouncer();
 

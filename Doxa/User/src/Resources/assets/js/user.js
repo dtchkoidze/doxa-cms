@@ -32,6 +32,7 @@ import WrongVerificationLink from "./apps/WrongVerificationLink.vue";
 import SessionExpired from "./apps/SessionExpired.vue";
 import GoogleLink from "./apps/GoogleLink.vue";
 import FacebookLink from "./apps/FacebookLink.vue";
+import TwoFactor from "./apps/TwoFactor.vue";
 
 
 //import WrongVerificationToken from "./apps/WrongVerificationToken.vue";
@@ -55,6 +56,7 @@ const app = createApp({
         SessionExpired,
         GoogleLink,
         FacebookLink,
+        TwoFactor,
     },
     data() {
         return {};

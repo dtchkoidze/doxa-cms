@@ -19,6 +19,11 @@ class SocialAuthService
 {
     public const MAGIC_TTL_MINUTES = 15;
 
+    public function __construct(
+        private readonly TwoFactorService $twoFactor,
+    ) {
+    }
+
     public static function isAuthEnabled(string $provider): bool
     {
         return (bool) config("services.{$provider}.auth_enabled");
@@ -228,6 +233,16 @@ class SocialAuthService
             return [
                 'action' => 'error',
                 'message' => 'This account is not active yet. Please wait for activation or contact support.',
+            ];
+        }
+
+        if ($this->twoFactor->hasConfirmedMethod((int) $user->id)) {
+            $this->twoFactor->storePendingLogin((int) $user->id, true, 'session');
+            $this->clearPending($this->providerNameFromConfig($provider));
+
+            return [
+                'action' => 'redirect',
+                'url' => route('auth.two_factor'),
             ];
         }
 

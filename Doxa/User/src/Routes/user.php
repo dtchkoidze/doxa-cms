@@ -28,6 +28,15 @@ Route::group(['middleware' => ['web'], 'prefix' => config('app.auth_prefix')], f
         Route::get('/facebook/link/magic/{token}', [FacebookController::class, 'magicLink'])->name('auth.facebook.link.magic');
         Route::get('/facebook/link/cancel', [FacebookController::class, 'cancelLink'])->name('auth.facebook.link.cancel');
     }
+
+    Route::get('/two-factor', [\Doxa\User\Http\Controllers\TwoFactor\TwoFactorChallengeController::class, 'page'])
+        ->name('auth.two_factor');
+    Route::get('/api/two-factor/challenge', [\Doxa\User\Http\Controllers\TwoFactor\TwoFactorChallengeController::class, 'state'])
+        ->name('auth.api.two_factor.challenge');
+    Route::post('/api/two-factor/challenge/channel', [\Doxa\User\Http\Controllers\TwoFactor\TwoFactorChallengeController::class, 'switchChannel'])
+        ->name('auth.api.two_factor.challenge_channel');
+    Route::post('/api/two-factor/challenge', [\Doxa\User\Http\Controllers\TwoFactor\TwoFactorChallengeController::class, 'verify'])
+        ->name('auth.api.two_factor.challenge_verify');
 });
 
 Route::group(['middleware' => ['web', 'authorization'], 'prefix' => config('app.auth_prefix')], function () {
@@ -97,4 +106,38 @@ Route::group([
         ->name('auth.api.add_email.request');
     Route::post('/api/add-email/confirm', [AddEmailController::class, 'confirm'])
         ->name('auth.api.add_email.confirm');
+});
+
+Route::group([
+    'middleware' => ['auth'],
+    'prefix' => config('app.auth_prefix'),
+], function () {
+    $twoFactor = \Doxa\User\Http\Controllers\TwoFactor\TwoFactorSettingsController::class;
+    Route::get('/api/two-factor', [$twoFactor, 'state'])->name('auth.api.two_factor.state');
+    Route::post('/api/password', [$twoFactor, 'changePassword'])->name('auth.api.password');
+});
+
+Route::group([
+    'middleware' => array_merge(
+        ['auth'],
+        config('user.two_factor_middleware', [])
+    ),
+    'prefix' => config('app.auth_prefix'),
+], function () {
+    $twoFactor = \Doxa\User\Http\Controllers\TwoFactor\TwoFactorSettingsController::class;
+    Route::post('/api/two-factor/totp/start', [$twoFactor, 'startTotp'])->name('auth.api.two_factor.totp_start');
+    Route::post('/api/two-factor/totp/confirm', [$twoFactor, 'confirmTotp'])->name('auth.api.two_factor.totp_confirm');
+    Route::post('/api/two-factor/email/start', [$twoFactor, 'startEmail'])->name('auth.api.two_factor.email_start');
+    Route::post('/api/two-factor/email/confirm', [$twoFactor, 'confirmEmail'])->name('auth.api.two_factor.email_confirm');
+    Route::post('/api/two-factor/disable/start', [$twoFactor, 'startDisable'])->name('auth.api.two_factor.disable_start');
+    Route::post('/api/two-factor/disable/confirm', [$twoFactor, 'confirmDisable'])->name('auth.api.two_factor.disable_confirm');
+    Route::post('/api/two-factor/backup/start', [$twoFactor, 'startBackup'])->name('auth.api.two_factor.backup_start');
+    Route::post('/api/two-factor/backup/confirm', [$twoFactor, 'confirmBackup'])->name('auth.api.two_factor.backup_confirm');
+    Route::post('/api/two-factor/backup/remove/start', [$twoFactor, 'startRemoveBackup'])->name('auth.api.two_factor.backup_remove_start');
+    Route::post('/api/two-factor/backup/remove/confirm', [$twoFactor, 'confirmRemoveBackup'])->name('auth.api.two_factor.backup_remove_confirm');
+    Route::post('/api/two-factor/backup/swap', [$twoFactor, 'swapBackup'])->name('auth.api.two_factor.backup_swap');
+    Route::post('/api/two-factor/email-change/start', [$twoFactor, 'startEmailChange'])->name('auth.api.two_factor.email_change_start');
+    Route::post('/api/two-factor/email-change/confirm-2fa', [$twoFactor, 'confirmEmailChangeTwoFactor'])->name('auth.api.two_factor.email_change_2fa');
+    Route::post('/api/two-factor/email-change/request-new', [$twoFactor, 'requestEmailChangeNew'])->name('auth.api.two_factor.email_change_request');
+    Route::post('/api/two-factor/email-change/confirm-new', [$twoFactor, 'confirmEmailChangeNew'])->name('auth.api.two_factor.email_change_confirm');
 });

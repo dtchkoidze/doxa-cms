@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Doxa\Core\Libraries\Logging\Clog;
 use Doxa\User\Libraries\Registration as REG;
+use Doxa\User\Libraries\TwoFactorService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -13,6 +14,11 @@ use Illuminate\Validation\Rules\Password;
 class ApiController extends Controller
 {
     use ResponceTrait;
+
+    public function __construct(
+        private readonly TwoFactorService $twoFactor,
+    ) {
+    }
 
     public function login()
     {
@@ -29,33 +35,12 @@ class ApiController extends Controller
         }
 
         $remember = request()->boolean('remember');
-
-        if (Auth::attempt([
+        $credentials = [
             REG::loginType() => REG::login(),
             'password' => request('password'),
-        ], $remember)) {
-            Clog::write(REG::LOG, 'Success login!', Clog::DEBUG);
-            REG::clearLoginAttempts();
-            REG::setUserFromAuth();
-            REG::persistOnboarding(clearSession: true, replaceSuccessUrl: true);
-            REG::recordLoginArtifacts();
-            if (!REG::user()->isActive()) {
-                Auth::logout();
-                REG::clearAuthCookie();
-                if (REG::user()->hasReadyStatus()) {
-                    Clog::write(REG::LOG, 'REG::user()->hasReadyStatus()', Clog::DEBUG);
-                    REG::setAuthCookie('ready');
-                    return $this->accountVerifedAndRedirect([
-                        'message' => 'Your account is verified and waiting for activation. By clicking OK you will be redirected to activation status page.',
-                        'url' => route('auth.waiting_for_activate'),
-                    ]);
-                } else {
-                    return $this->responceLoginFailed();
-                }
-            } else {
-                return $this->redirectResponce(REG::getSuccessAuthUrl());
-            }
-        } else {
+        ];
+
+        if (!Auth::validate($credentials)) {
             REG::hitLoginAttempt();
             if (REG::tooManyLoginAttempts()) {
                 Clog::write(REG::LOG, 'Login locked out after failed attempt for ' . REG::login() . ' / ' . request()->ip(), Clog::NOTICE);
@@ -63,6 +48,47 @@ class ApiController extends Controller
             }
             return $this->responceLoginFailed();
         }
+
+        $provider = Auth::getProvider();
+        $user = $provider->retrieveByCredentials($credentials);
+        if (!$user) {
+            return $this->responceLoginFailed();
+        }
+
+        REG::clearLoginAttempts();
+
+        if (method_exists($user, 'isActive') && !$user->isActive()) {
+            Auth::login($user, $remember);
+            REG::setUserFromAuth();
+            Auth::logout();
+            REG::clearAuthCookie();
+            if (method_exists($user, 'hasReadyStatus') && $user->hasReadyStatus()) {
+                REG::setAuthCookie('ready');
+                return $this->accountVerifedAndRedirect([
+                    'message' => 'Your account is verified and waiting for activation. By clicking OK you will be redirected to activation status page.',
+                    'url' => route('auth.waiting_for_activate'),
+                ]);
+            }
+            return $this->responceLoginFailed();
+        }
+
+        if ($this->twoFactor->hasConfirmedMethod((int) $user->getAuthIdentifier())) {
+            $this->twoFactor->storePendingLogin((int) $user->getAuthIdentifier(), $remember, 'session');
+
+            return response()->json([
+                'success' => true,
+                'needs_2fa' => true,
+                'redirect' => route('auth.two_factor'),
+            ]);
+        }
+
+        Auth::login($user, $remember);
+        Clog::write(REG::LOG, 'Success login!', Clog::DEBUG);
+        REG::setUserFromAuth();
+        REG::persistOnboarding(clearSession: true, replaceSuccessUrl: true);
+        REG::recordLoginArtifacts();
+
+        return $this->redirectResponce(REG::getSuccessAuthUrl());
     }
 
     /**

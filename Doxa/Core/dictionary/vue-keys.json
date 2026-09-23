@@ -1,7 +1,11 @@
 {
     "vocabulary": [
+        "2fa_authenticator_title",
+        "enter_authenticator_code",
         "password",
-        "remember_me"
+        "remember_me",
+        "two_factor_code_sent_to_backup_email",
+        "two_factor_code_sent_to_email"
     ],
     "text_blocks": []
 }
