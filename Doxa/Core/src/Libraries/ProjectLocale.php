@@ -2,7 +2,9 @@
 
 namespace Doxa\Core\Libraries;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Канал Chlo и cookie локали проекта (_project_locale).
@@ -133,12 +135,35 @@ class ProjectLocale
 
     /**
      * Ставит cookie и текущую локаль приложения/Chlo (после выбора языка из URL).
+     * Если пользователь залогинен — синхронизирует user_profiles.locale.
      */
     public static function applyLocale(string $code): void
     {
         Cookie::queue(self::cookieName(), $code, self::cookieMinutes());
         Chlo::set(locale: $code);
         app()->setLocale($code);
+        self::persistLocaleToUserProfile($code);
+    }
+
+    /**
+     * Пишет locale в user_profiles для залогиненного пользователя, если значение изменилось.
+     */
+    private static function persistLocaleToUserProfile(string $code): void
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            return;
+        }
+
+        $current = DB::table('user_profiles')->where('user', $userId)->value('locale');
+        if ($current === $code) {
+            return;
+        }
+
+        DB::table('user_profiles')->where('user', $userId)->update([
+            'locale' => $code,
+            'updated_at' => now(),
+        ]);
     }
 
     /**

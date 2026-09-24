@@ -10,7 +10,7 @@ class LogsCleanup
 {
     public function __invoke()
     {
-        Clog::write('cleanup', '>>>>>>>>>>>>>>>>>>>>>> LogsCleanup() <<<<<<<<<<<<<<<<<<<<<<<<', 4);
+        Clog::write('cleanup', '>>>>>>>>>>>>>>>>>>>>>> LogsCleanup() <<<<<<<<<<<<<<<<<<<<<<<<', Clog::DEBUG);
 
         $logs_lifetime = Utils::getLogsLifetime();
         $files = File::allFiles(storage_path('logs'));
@@ -19,7 +19,7 @@ class LogsCleanup
             if($age > $logs_lifetime){
                 $re = File::delete($file->getPathname());
                 if($re){
-                    Clog::write('cleanup', 'Deleted '.$file->getPathname(), 4);
+                    Clog::write('cleanup', 'Deleted '.$file->getPathname(), Clog::DEBUG);
                 }
             }
         }
