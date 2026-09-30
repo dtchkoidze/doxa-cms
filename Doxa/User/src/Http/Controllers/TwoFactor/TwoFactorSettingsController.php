@@ -246,7 +246,7 @@ class TwoFactorSettingsController extends Controller
             ], 422);
         }
 
-        $result = $this->twoFactor->changePassword($this->userId(), (string) request('password'));
+        $result = $this->twoFactor->changePassword($this->userId(), (string) request('password'), (string) request('current_password'));
         if ($result !== true) {
             return response()->json([
                 'status' => 'error',

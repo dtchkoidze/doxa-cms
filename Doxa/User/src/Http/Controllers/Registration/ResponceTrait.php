@@ -39,7 +39,7 @@ trait ResponceTrait
         $confirmation = [
             'type' => 'warning',
             'title' => 'You already started registration process',
-            'message' => 'Click Confirm button to continue registration and conirm your email or phone number.',
+            'message' => 'Click Confirm button to continue registration and confirm your email or phone number.',
             'buttons' => [
                 ['title' => 'Confirm', 'callback' => 'confirmAccount', 'timer' => REG::getResendCodeTimer()],
                 ['title' => 'Cancel', 'type' => 'cancel'],
@@ -117,8 +117,8 @@ trait ResponceTrait
     {
         $confirmation = [
             'type' => 'warning',
-            'title' => 'To often!',
-            'message' => 'You can\'t resend code too often. Wait please while timer will be finished.',
+            'title' => 'Too often!',
+            'message' => 'You can\'t resend code too often. Please wait until the timer finishes.',
             'buttons' => [
                 ['title' => 'Resend code', 'style' => 'primary', 'callback' => 'confirmAccount', 'timer' => $timer],
                 ['title' => 'Cancel', 'type' => 'cancel'],
@@ -133,13 +133,20 @@ trait ResponceTrait
 
     protected function responceCodeSent($method)
     {
+        // Восстановление: текст не раскрывает, зарегистрирован ли логин
+        if ($method === 'recovery') {
+            $message = 'If an account with this ' . REG::loginType() . ' exists, a new verification code has been sent. Code valid for ' . REG::codeExpireIn() . ' minutes.';
+        } else {
+            $message = REG::loginType() == 'email' ?
+                'Verification code has been sent to your email. Code valid for '.REG::codeExpireIn().' minutes.'
+                :
+                'Verification code has been sent to your phone number. Code valid for '.REG::codeExpireIn().' minutes.';
+        }
+
         $confirmation = [
             'type' => 'success',
             'title' => 'Code sent',
-            'message' => REG::loginType() == 'email' ? 
-                'Code and confirmation link has been sent to your email. Link and code valid for '.REG::codeExpireIn().' minutes.' 
-                : 
-                'Code and confirmation link has been sent to your phone number. Link and code valid for '.REG::codeExpireIn().' minutes.',
+            'message' => $message,
             'buttons' => [
                 ['title' => 'OK', 'type' => 'cancel'],
             ],

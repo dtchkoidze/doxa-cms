@@ -166,7 +166,7 @@ export default {
                         this.errors.password_confirmation = 'Password confirmation is required';
                     } else {
                         if (this.form_data.password !== this.form_data.password_confirmation) {
-                            this.errors.password_confirmation = 'Passwords does not match';
+                            this.errors.password_confirmation = 'Passwords do not match';
                         }
                     }
                 }

@@ -1,9 +1,9 @@
 <template>
     <div class="w-full max-w-sm px-4 py-8 mx-auto">
-        <Header title="Session  expired"></Header>
+        <Header title="Session expired"></Header>
         <div class="flex items-center justify-between mt-6">
             <div class="mr-1">
-                Your session is expired. Please note than confirmation link and code expires in {{ code_expire_in }} minutes.            
+                Your session is expired. Please note that the verification code expires in {{ code_expire_in }} minutes.
             </div>
         </div>
 

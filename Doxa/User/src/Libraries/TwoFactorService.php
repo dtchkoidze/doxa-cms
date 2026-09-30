@@ -758,16 +758,23 @@ class TwoFactorService
     }
 
     /**
-     * Меняет пароль. Возвращает true или строку ошибки.
+     * Меняет пароль. Если пароль уже задан, требует верный текущий пароль.
+     * Возвращает true или строку ошибки.
      *
+     * @param  string  $currentPassword  текущий пароль (не проверяется, если пароля ещё нет — вход через соцсеть)
      * @return true|string
      */
-    public function changePassword(int $userId, string $password): bool|string
+    public function changePassword(int $userId, string $password, string $currentPassword): bool|string
     {
         $user = $this->userRow($userId);
         $current = $user->password ?? null;
-        if ($current !== null && $current !== '' && password_verify($password, $current)) {
-            return vocab('password_is_the_same');
+        if ($current !== null && $current !== '') {
+            if (!password_verify($currentPassword, $current)) {
+                return vocab('current_password_incorrect');
+            }
+            if (password_verify($password, $current)) {
+                return vocab('password_is_the_same');
+            }
         }
 
         $hashed = Hash::make($password);

@@ -4,7 +4,6 @@ namespace Doxa\Core\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Doxa\Core\Libraries\Logging\Clog;
 
 class Dictionary
 {
@@ -13,8 +12,6 @@ class Dictionary
     {
         $locales = DB::table('locales')->pluck('code', 'id')->toArray();
         //dump('$locales', $locales);
-
-        Clog::write('missing_keys', '$keys:', $keys);
 
         //dump($keys);
 

@@ -28,7 +28,6 @@ import Verify from "./apps/Verify.vue";
 import Password from "./apps/Password.vue";
 import WaitingForActivate from "./apps/WaitingForActivate.vue";
 import Recovery from "./apps/Recovery.vue";
-import WrongVerificationLink from "./apps/WrongVerificationLink.vue";
 import SessionExpired from "./apps/SessionExpired.vue";
 import GoogleLink from "./apps/GoogleLink.vue";
 import FacebookLink from "./apps/FacebookLink.vue";
@@ -52,7 +51,6 @@ const app = createApp({
         Password,
         WaitingForActivate,
         Recovery,
-        WrongVerificationLink,
         SessionExpired,
         GoogleLink,
         FacebookLink,

@@ -7,7 +7,7 @@ OAuth-вход через Facebook в `Doxa/User`. Общая логика с Go
 - Отдельный поток вне middleware `authorization`
 - Идентификатор — **`facebook_id`**
 - **Email не обязателен** (`NULL` допустим)
-- Если email есть и уже занят — страница привязки (пароль / magic link)
+- Если email есть и уже занят — страница привязки (пароль / код из письма)
 
 ## Настройка хоста
 
@@ -79,8 +79,8 @@ Quickstart с Facebook JS SDK **не нужен** — у нас Socialite (се�
 | GET | `/facebook/callback` | `auth.facebook.callback` |
 | GET | `/facebook/link` | `auth.facebook.link` |
 | POST | `/facebook/link/password` | `auth.facebook.link.password` |
-| POST | `/facebook/link/magic` | `auth.facebook.link.send_magic` |
-| GET | `/facebook/link/magic/{token}` | `auth.facebook.link.magic` |
+| POST | `/facebook/link/send-code` | `auth.facebook.link.send_code` |
+| POST | `/facebook/link/verify-code` | `auth.facebook.link.verify_code` |
 | GET | `/facebook/link/cancel` | `auth.facebook.link.cancel` |
 
 ## Сценарии
@@ -98,7 +98,7 @@ Quickstart с Facebook JS SDK **не нужен** — у нас Socialite (се�
 | `FacebookController.php` | HTTP |
 | `FacebookAuthButton.vue` | Кнопка на login/register |
 | `FacebookLink.vue` | UI привязки |
-| `FacebookLinkEmail.php` | Magic link письмо |
+| `FacebookLinkEmail.php` | Письмо с кодом подтверждения |
 
 ## Логи
 

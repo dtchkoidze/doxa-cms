@@ -84,25 +84,6 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Handle Confirnmation link
-     *
-     * @return void
-     */
-    public function verificationLink($method)
-    {
-        Clog::write(REG::LOG, 'Verification link ('.$method.')', Clog::DEBUG);
-
-        if (REG::isVerificationCodeExpired()) {
-            Clog::write(REG::LOG, 'Verification code is expired.', Clog::NOTICE);
-            return $this->errorResponce('Verification code is expired.');
-        }
-
-        REG::setAuthCookie('password')->setPasswordPendingStatus();
-
-        return redirect(route('auth.password', ['method' => $method]));
-    }
-    
-    /**
      * Password Set up Page
      *
      * @return View
@@ -197,13 +178,6 @@ class RegistrationController extends Controller
                 $_error = [
                     'title' => 'Using invalid method',
                     'message' => 'Backend error. Received invalid method parameter. It\'s a bug. Please let us know about it.',
-                ];
-                break;
-            case 'wrong-verification-link':
-                $title = 'Wrong verification link';
-                $_error = [
-                    'title' => 'Wrong verification link',
-                    'message' => 'Your verification link is invalid. Try to resend link.',
                 ];
                 break;
             default:

@@ -51,7 +51,7 @@
 
             <template v-else>
                 <div class="mb-2 sm">
-                    Verification instructions have been sent to {{ email }}. Enter verification code below.
+                    A verification code has been sent to {{ email }}. Enter the code below.
                     Code valid for {{ codeExpireIn }} minutes.
                 </div>
 
@@ -153,7 +153,7 @@ export default {
             this.errors.form = '';
             this.errors.code = '';
             this.processing = 'send';
-            axios.postForm('/auth/facebook/link/magic')
+            axios.postForm('/auth/facebook/link/send-code')
                 .then(response => {
                     if (response.data.confirmation) {
                         this.$emitter.emit('open-confirm-modal', {

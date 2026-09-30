@@ -8,9 +8,13 @@
         <template v-else>
             <Header title="Verification" />
 
-            <div class="mb-2 sm">
-                Verification instructions have been sent to {{ login }}. Enter verification code below or follow
-                provided link. Link and code valid for {{ code_expire_in }} minutes.
+            <div v-if="method === 'recovery'" class="mb-2 sm">
+                If an account with {{ login }} exists, we have sent a verification code to it. Enter the code below.
+                The code is valid for {{ code_expire_in }} minutes.
+            </div>
+            <div v-else class="mb-2 sm">
+                A verification code has been sent to {{ login }}. Enter the code below.
+                The code is valid for {{ code_expire_in }} minutes.
             </div>
 
             <div>

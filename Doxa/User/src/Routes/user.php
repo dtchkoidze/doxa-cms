@@ -14,7 +14,7 @@ Route::group(['middleware' => ['web'], 'prefix' => config('app.auth_prefix')], f
         Route::get('/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
         Route::get('/google/link', [GoogleController::class, 'linkPage'])->name('auth.google.link');
         Route::post('/google/link/password', [GoogleController::class, 'linkWithPassword'])->name('auth.google.link.password');
-        Route::post('/google/link/magic', [GoogleController::class, 'sendMagicLink'])->name('auth.google.link.send_magic');
+        Route::post('/google/link/send-code', [GoogleController::class, 'sendLinkCode'])->name('auth.google.link.send_code');
         Route::post('/google/link/verify-code', [GoogleController::class, 'verifyLinkCode'])->name('auth.google.link.verify_code');
         Route::get('/google/link/cancel', [GoogleController::class, 'cancelLink'])->name('auth.google.link.cancel');
     }
@@ -24,7 +24,7 @@ Route::group(['middleware' => ['web'], 'prefix' => config('app.auth_prefix')], f
         Route::get('/facebook/callback', [FacebookController::class, 'callback'])->name('auth.facebook.callback');
         Route::get('/facebook/link', [FacebookController::class, 'linkPage'])->name('auth.facebook.link');
         Route::post('/facebook/link/password', [FacebookController::class, 'linkWithPassword'])->name('auth.facebook.link.password');
-        Route::post('/facebook/link/magic', [FacebookController::class, 'sendMagicLink'])->name('auth.facebook.link.send_magic');
+        Route::post('/facebook/link/send-code', [FacebookController::class, 'sendLinkCode'])->name('auth.facebook.link.send_code');
         Route::post('/facebook/link/verify-code', [FacebookController::class, 'verifyLinkCode'])->name('auth.facebook.link.verify_code');
         Route::get('/facebook/link/cancel', [FacebookController::class, 'cancelLink'])->name('auth.facebook.link.cancel');
     }
@@ -55,9 +55,6 @@ Route::group(['middleware' => ['web', 'authorization'], 'prefix' => config('app.
 
     // password setup page
     Route::get('/{method}/password', [RegistrationController::class, 'password'])->name('auth.password');
-
-    // verification by link
-    Route::get('/{method}/verification-link', [RegistrationController::class, 'verificationLink'])->name('auth.verification_link');
 
     // account suspended page
     Route::get('/suspended', [RegistrationController::class, 'suspended'])->name('auth.suspended');

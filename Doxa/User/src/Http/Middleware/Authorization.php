@@ -26,18 +26,17 @@ class Authorization
 
         $registration = Registration::init();
 
-        /**
-         * Check GET params for verification link, v_hash(vh) and login_type(lt) must be provided.
-         * If not, we clear auth cookie, logout and redirect to error page.
-         */
-        switch (Route::currentRouteName()) {
-            case 'auth.verification_link':
-                if (!request('vh') || !request('lt')) {
-                    Clog::write('auth', '---- wrong-verification-link', Clog::DEBUG);
-                    $this->clear();
-                    return $this->_responce('auth.error', ['error' => 'wrong-verification-link']);
-                }
-                break;
+        // Восстановление без пользователя доходит только до страницы кода, resend и проверки кода
+        if (Registration::isRecoveryDecoy()) {
+            switch (Route::currentRouteName()) {
+                case 'auth.verify':
+                case 'auth.api.resend_verification_code':
+                case 'auth.api.verification_by_code':
+                    if (Auth::check()) {
+                        return redirect(Registration::getSuccessAuthUrl());
+                    }
+                    return $next($request);
+            }
         }
 
         switch (Route::currentRouteName()) {
@@ -92,7 +91,6 @@ class Authorization
 
             case 'auth.verify':
             case 'auth.password':
-            case 'auth.verification_link':
                 Clog::write('auth', 'Auth::check(): ' . Auth::check(), Clog::NOTICE);
                 if (Auth::check()) {
                     return redirect(Registration::getSuccessAuthUrl());
@@ -157,7 +155,6 @@ class Authorization
          */
         switch (Route::currentRouteName()) {
             case 'auth.verify':
-            case 'auth.verification_link':
             case 'auth.api.resend_verification_code':
             case 'auth.api.verification_by_code':
             case 'auth.password':
@@ -175,7 +172,7 @@ class Authorization
                     case 'recovery':
                         //Clog::write('auth', 'MIDDLEWARE 002-001-recovery', Clog::NOTICE);
                         if (!Registration::user()->isActive()) {
-                            Clog::write('auth', 'ERROR: User ' . Registration::login() . ' requests recovery link but not active!! .', Clog::ERROR);
+                            Clog::write('auth', 'ERROR: User ' . Registration::login() . ' requests recovery but not active!! .', Clog::ERROR);
                             $this->clear();
                             return $this->_responce('auth.error', ['error' => 'session-expired']);
                         }
@@ -193,7 +190,6 @@ class Authorization
             case 'auth.verify':
             case 'auth.api.resend_verification_code':
             case 'auth.api.verification_by_code':
-            case 'auth.verification_link':
                 switch (Registration::method()) {
                     case 'account_deletion':
                         if (!Auth::check()) {

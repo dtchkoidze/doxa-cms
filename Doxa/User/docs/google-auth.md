@@ -90,8 +90,8 @@ php artisan config:clear
 | GET | `/google/callback` | `auth.google.callback` | Callback от Google |
 | GET | `/google/link` | `auth.google.link` | Страница привязки Google к существующему email |
 | POST | `/google/link/password` | `auth.google.link.password` | Привязка по паролю |
-| POST | `/google/link/magic` | `auth.google.link.send_magic` | Отправка magic link на email |
-| GET | `/google/link/magic/{token}` | `auth.google.link.magic` | Подтверждение по ссылке из письма |
+| POST | `/google/link/send-code` | `auth.google.link.send_code` | Отправка кода подтверждения на email |
+| POST | `/google/link/verify-code` | `auth.google.link.verify_code` | Подтверждение кодом из письма |
 | GET | `/google/link/cancel` | `auth.google.link.cancel` | Отмена привязки |
 
 Файл маршрутов: `Doxa/User/src/Routes/user.php`
@@ -103,8 +103,8 @@ php artisan config:clear
 | `Doxa/User/src/Libraries/SocialAuthService.php` | Бизнес-логика: find/create/link/login |
 | `Doxa/User/src/Http/Controllers/SocialAuth/GoogleController.php` | HTTP: redirect, callback, link page, API |
 | `Doxa/User/src/Resources/views/auth/google-link.blade.php` | Blade-обёртка страницы привязки |
-| `Doxa/User/src/Resources/assets/js/apps/GoogleLink.vue` | UI привязки (пароль / magic link) |
-| `Doxa/User/src/Mail/GoogleLinkEmail.php` | Письмо с magic link |
+| `Doxa/User/src/Resources/assets/js/apps/GoogleLink.vue` | UI привязки (пароль / код из письма) |
+| `Doxa/User/src/Mail/GoogleLinkEmail.php` | Письмо с кодом подтверждения |
 | `Doxa/User/src/Resources/views/emails/google-link-email.blade.php` | Шаблон письма |
 | `Doxa/User/src/Resources/assets/js/apps/Login.vue` | Кнопка «Continue with Google» |
 | `Doxa/User/src/Resources/assets/js/apps/Register.vue` | Кнопка «Continue with Google» |
@@ -137,7 +137,7 @@ php artisan config:clear
 
 1. User найден по `email`, `google_id` пустой.
 2. Pending в session → страница `/auth/google/link`.
-3. Подтверждение: пароль или magic link.
+3. Подтверждение: пароль или код из письма.
 4. Запись `google_id` → login.
 
 Если email нет или не verified — пункт 3 не срабатывает, создаётся отдельный social-аккаунт (`email = NULL` или с email, если свободен).
@@ -155,9 +155,9 @@ php artisan config:clear
 | Механизм | Ключ | TTL |
 |----------|------|-----|
 | Laravel session | `google_auth_pending` | до logout / cancel / успешного link |
-| Cache | `google_link:{token}` | 15 минут (magic link) |
+| Cache | `google_link:code:{user_id}` | срок кода (`registration.verification_code_expire_in`) |
 
-Magic link одноразовый: после перехода токен удаляется из cache (`Cache::pull`).
+Код одноразовый: после успешной проверки запись удаляется из cache.
 
 ## UI
 
@@ -211,4 +211,4 @@ npm run build
 
 Канал логов: `auth_google`.
 
-Пишутся события: callback errors, создание user, link, отправка magic link.
+Пишутся события: callback errors, создание user, link, отправка кода подтверждения.

@@ -8,7 +8,7 @@
         <div class="space-y-3">
 
             <div class="mb-2 sm">
-                Enter your email please. We'll send you recovery code and instructions.
+                Enter your email and we'll send you a recovery code.
             </div>
 
             <!------------ Email -------------->

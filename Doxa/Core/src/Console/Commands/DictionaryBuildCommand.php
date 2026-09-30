@@ -3,7 +3,6 @@
 namespace Doxa\Core\Console\Commands;
 
 use Doxa\Core\Helpers\Dictionary;
-use Doxa\Core\Libraries\Logging\Clog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -45,7 +44,6 @@ class DictionaryBuildCommand extends Command
         }
 
         [$dictionary, $missing] = Dictionary::create($keys);
-        Clog::write('missing_keys', 'doxa $missing', $missing);
 
         $distRelative = (string) config('doxa.dictionary.dist_path');
         $distPath = base_path($distRelative);

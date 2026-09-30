@@ -17,7 +17,7 @@ use Doxa\User\Mail\GoogleLinkEmail;
 
 class SocialAuthService
 {
-    public const MAGIC_TTL_MINUTES = 15;
+    public const LINK_CODE_TTL_MINUTES = 15;
 
     public function __construct(
         private readonly TwoFactorService $twoFactor,
@@ -39,7 +39,7 @@ class SocialAuthService
                 'id_column' => 'google_id',
                 'log' => 'auth_google',
                 'pending_session_key' => 'google_auth_pending',
-                'magic_cache_prefix' => 'google_link:',
+                'link_cache_prefix' => 'google_link:',
                 'link_route' => 'auth.google.link',
                 'mail' => GoogleLinkEmail::class,
                 'label' => 'Google',
@@ -48,7 +48,7 @@ class SocialAuthService
                 'id_column' => 'facebook_id',
                 'log' => 'auth_facebook',
                 'pending_session_key' => 'facebook_auth_pending',
-                'magic_cache_prefix' => 'facebook_link:',
+                'link_cache_prefix' => 'facebook_link:',
                 'link_route' => 'auth.facebook.link',
                 'mail' => FacebookLinkEmail::class,
                 'label' => 'Facebook',
@@ -337,7 +337,7 @@ class SocialAuthService
      *
      * @return array{action: string, message?: string, timer?: int, confirmation?: array<string, mixed>}
      */
-    public function sendMagicLink(string $providerName): array
+    public function sendLinkCode(string $providerName): array
     {
         if (!self::isAuthEnabled($providerName)) {
             return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
@@ -370,8 +370,8 @@ class SocialAuthService
                 'timer' => $timer,
                 'confirmation' => [
                     'type' => 'warning',
-                    'title' => 'To often!',
-                    'message' => 'You can\'t resend code too often. Wait please while timer will be finished.',
+                    'title' => 'Too often!',
+                    'message' => 'You can\'t resend code too often. Please wait until the timer finishes.',
                     'buttons' => [
                         ['title' => 'Resend code', 'style' => 'primary', 'callback' => 'sendCode', 'timer' => $timer],
                         ['title' => 'Cancel', 'type' => 'cancel'],
@@ -532,7 +532,7 @@ class SocialAuthService
 
     private function linkCodeExpireMinutes(): int
     {
-        return (int) (config('registration.verification_code_expire_in') ?? self::MAGIC_TTL_MINUTES);
+        return (int) (config('registration.verification_code_expire_in') ?? self::LINK_CODE_TTL_MINUTES);
     }
 
     /**
@@ -542,17 +542,7 @@ class SocialAuthService
     {
         $provider = $this->provider($providerName);
 
-        return $provider['magic_cache_prefix'] . 'code:' . $userId;
-    }
-
-    /**
-     * @deprecated Ссылка больше не используется — оставлен для старых писем, всегда ошибка.
-     *
-     * @return array{action: string, message?: string}
-     */
-    public function linkWithMagicToken(string $token): array
-    {
-        return ['action' => 'error', 'message' => 'This confirmation link is no longer valid. Request a new code from the link page.'];
+        return $provider['link_cache_prefix'] . 'code:' . $userId;
     }
 
     /**

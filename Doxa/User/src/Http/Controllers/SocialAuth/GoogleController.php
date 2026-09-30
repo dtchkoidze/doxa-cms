@@ -104,11 +104,14 @@ class GoogleController extends Controller
         return $this->jsonRespond($result);
     }
 
-    public function sendMagicLink()
+    /**
+     * Отправка на email кода подтверждения привязки.
+     */
+    public function sendLinkCode()
     {
         $this->ensureEnabled();
 
-        $result = $this->socialAuth->sendMagicLink(self::PROVIDER);
+        $result = $this->socialAuth->sendLinkCode(self::PROVIDER);
 
         return $this->jsonRespond($result);
     }

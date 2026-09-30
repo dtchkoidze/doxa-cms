@@ -148,6 +148,15 @@ use Projects\Dusty\Libraries\Partner\Partner;
  * ----------------------------------------------
  * @method static self persistOnboarding()
  * @method self persistOnboarding()
+ * ----------------------------------------------
+ * @method static self markLoginVerified()
+ * @method self markLoginVerified()
+ * ----------------------------------------------
+ * @method static self startRecoveryDecoy()
+ * @method self startRecoveryDecoy()
+ * ----------------------------------------------
+ * @method static boolean isRecoveryDecoy()
+ * @method boolean isRecoveryDecoy()
  *
  */
 class Registration
@@ -337,6 +346,13 @@ class Registration
     protected $method = '';
 
     protected $stage = '';
+
+    /**
+     * Восстановление без пользователя: логин и время «отправки» кода из auth-cookie.
+     *
+     * @var array{login: string, sent_at: int}|null
+     */
+    protected ?array $recovery_decoy = null;
 
 
     // protected $log_level = 1;
@@ -589,20 +605,14 @@ class Registration
 
     /**
      * Pending user is a user who is making some registration process: registration. recovery, verification.
-     * We must have stored v_hash and login_type in the cookie or provided in request.
-     * If both, v_hash and login_type are provided than we're trying to get user by v_hash.
+     * v_hash and login_type must be stored in the auth cookie; user is resolved by v_hash.
      * $this->login is a user login value (email, phone ...). We're usin them in the registration process.
+     * Восстановление без пользователя: логин берётся из auth-cookie, пользователь остаётся null.
      */
     protected function getPendingUser()
     {
         Clog::write(self::LOG, 'RESOLVE PENDING USER', Clog::DEBUG);
-        if (request('vh') && request('lt')) {
-            Clog::write(self::LOG, '-- vh && lt in $_GET: vh: ' . request('vh') . ', lt: ' . request('lt'), Clog::NOTICE);
-            $this->v_hash = request('vh');
-            $this->login_type = request('lt');
-        } else {
-            $this->getAuthCookie();
-        }
+        $this->getAuthCookie();
 
         if (!$this->v_hash || !$this->login_type) {
             Clog::write(self::LOG, '-- v_hash OR login_type is empty!', Clog::DEBUG);
@@ -619,6 +629,9 @@ class Registration
         $this->user = $_user->first();
 
         if (!$this->user) {
+            if ($this->isRecoveryDecoy()) {
+                $this->login = $this->recovery_decoy['login'];
+            }
             return false;
         }
 
@@ -689,8 +702,23 @@ class Registration
     {
         $this->user->update([
             'status' => self::VERIFICATION_PENDING_STATUS,
-            'verified_at' => now(),
         ]);
+
+        return $this;
+    }
+
+    /**
+     * Отмечает логин пользователя подтверждённым после верного кода (только первое подтверждение).
+     *
+     * @return $this
+     */
+    protected function markLoginVerified(): self
+    {
+        if (!$this->user->verified_at) {
+            $this->user->update([
+                'verified_at' => now(),
+            ]);
+        }
 
         return $this;
     }
@@ -716,7 +744,6 @@ class Registration
     protected function sendMessage($method)
     {
         $set = [
-            'verification_link' => $this->getVerificationLink($method),
             'secret' => $this->plain_verification_secret,
             $this->login_type => $this->login,
         ];
@@ -826,9 +853,54 @@ class Registration
             if (!empty($data->stage)) {
                 $this->stage = $data->stage;
             }
+            if (!empty($data->decoy)) {
+                $this->recovery_decoy = [
+                    'login' => (string) $data->login,
+                    'sent_at' => (int) $data->sent_at,
+                ];
+            }
             return true;
         }
         return false;
+    }
+
+    /**
+     * Запускает восстановление без пользователя (логин не найден или неактивен): пишет auth-cookie
+     * с тем же набором полей, что и реальный поток, плюс логин и время «отправки».
+     * Письмо не отправляется; страница кода и повторная отправка ведут себя как для реального логина.
+     *
+     * @return $this
+     */
+    protected function startRecoveryDecoy(): self
+    {
+        $this->user = null;
+        $this->v_hash = Str::random(32);
+        $this->recovery_decoy = [
+            'login' => $this->login,
+            'sent_at' => time(),
+        ];
+
+        $this->setVhashCookie($this->v_hash);
+        Cookie::queue($this->auth_cookie_name, json_encode([
+            'v_hash' => $this->v_hash,
+            'login_type' => $this->login_type,
+            'stage' => 'recovery',
+            'decoy' => true,
+            'login' => $this->login,
+            'sent_at' => $this->recovery_decoy['sent_at'],
+        ]), $this->auth_token_expire);
+
+        return $this;
+    }
+
+    /**
+     * Возвращает true, если текущий запрос восстановления идёт без пользователя.
+     *
+     * @return bool
+     */
+    protected function isRecoveryDecoy(): bool
+    {
+        return $this->method === 'recovery' && !$this->user && $this->recovery_decoy !== null;
     }
 
     protected function persistOnboarding(bool $clearSession = true, bool $replaceSuccessUrl = false, bool $useSession = true): self
@@ -1143,7 +1215,11 @@ class Registration
     protected function getResendCodeTimer()
     {
         if (!$this->user) {
-            return 0;
+            if (!$this->isRecoveryDecoy()) {
+                return 0;
+            }
+            $timer = $this->recovery_decoy['sent_at'] + (int) ceil($this->verification_code_delay * 60) - time();
+            return max(0, $timer);
         }
 
         // Check if rate limit delay is set in cache
@@ -1390,17 +1466,6 @@ class Registration
         }
 
         return empty($errors) ? false : $errors;
-    }
-
-    protected function getVerificationLink($method)
-    {
-        Clog::write('auth', 'getVerificationLink base()', [
-            'method' => $method,
-        ]);
-        if ($method == 'account_deletion') {
-            return '/my-profile/settings';
-        }
-        return route('auth.verification_link', ['method' => $method]) . '?vh=' . $this->user->v_hash . '&lt=' . $this->login_type;
     }
 
     protected function isValidMethod()

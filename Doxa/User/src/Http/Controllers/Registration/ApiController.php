@@ -168,6 +168,12 @@ class ApiController extends Controller
             return $this->responceWaitForCodeResendTimer($timer);
         }
 
+        // Восстановление для неизвестного email: ответ как при реальной отправке, письмо не уходит
+        if (REG::isRecoveryDecoy()) {
+            REG::startRecoveryDecoy();
+            return $this->responceCodeSent($method);
+        }
+
         REG::refreshSecret()->sendMessage($method);
 
         REG::clearVerificationAttempts();
@@ -207,6 +213,7 @@ class ApiController extends Controller
 
         REG::clearVerificationAttempts();
         REG::invalidateVerificationSecret();
+        REG::markLoginVerified();
         REG::setAuthCookie('password', true);
 
         REG::setPasswordPendingStatus();
@@ -243,9 +250,7 @@ class ApiController extends Controller
         if (REG::isAutoActivation()) {
             REG::setUserActive();
             Auth::login(REG::user());
-            if ($method === 'register') {
-                REG::recordLoginArtifacts();
-            }
+            REG::recordLoginArtifacts();
             REG::clearAuthCookie();
         }
 
@@ -257,27 +262,30 @@ class ApiController extends Controller
     }
 
     /**
-     * Checks if user with specified login exists
+     * Запускает восстановление доступа: активному пользователю шлёт код, для неизвестного
+     * или неактивного логина запускает восстановление без пользователя. В обоих случаях
+     * отдаёт одинаковый переход на страницу ввода кода, чтобы по форме нельзя было узнать,
+     * зарегистрирован ли логин.
      *
-     * @return void
+     * @return \Illuminate\Http\JsonResponse
      */
     public function checkRecoveryLogin()
     {
         $errors = REG::validateRecoveryLoginRequest();
         if ($errors) {
-            Clog::write(REG::LOG, 'Login (' . REG::loginType() . ', ' . REG::logine() . ') check error: ' . json_encode($errors), Clog::WARNING);
+            Clog::write(REG::LOG, 'Login (' . REG::loginType() . ', ' . REG::login() . ') check error: ' . json_encode($errors), Clog::WARNING);
             return $this->errorsResponce($errors);
         }
 
         REG::getUserByLogin();
-        if (REG::user()) {
+        if (REG::user() && REG::user()->isActive()) {
             Clog::write(REG::LOG, 'User found: ' . REG::login(), Clog::DEBUG);
-            if (REG::user()->isActive()) {
-                REG::refreshSecret()->sendMessage('recovery')->setAuthCookie('recovery');
-                return $this->redirectResponce(route('auth.verify', ['method' => 'recovery']));
-            }
+            REG::refreshSecret()->sendMessage('recovery')->setAuthCookie('recovery');
+        } else {
+            Clog::write(REG::LOG, 'Recovery requested for unknown or inactive login: ' . REG::login(), Clog::NOTICE);
+            REG::startRecoveryDecoy();
         }
 
-        return $this->errorsResponce([REG::loginType() => 'Registred user not found or not activated or suspended.']);
+        return $this->redirectResponce(route('auth.verify', ['method' => 'recovery']));
     }
 }
