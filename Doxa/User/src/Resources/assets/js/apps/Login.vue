@@ -79,7 +79,7 @@
             <div class="text-sm">
                 Don’t you have an account?
                 <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
-                    href="/auth/register">
+                    :href="registerHref">
                     Sign Up
                 </a>
             </div>
@@ -140,6 +140,9 @@ export default {
         },
         locked() {
             return this.lockoutSeconds > 0;
+        },
+        registerHref() {
+            return "/auth/register" + window.location.search;
         },
         lockoutCountdown() {
             const minutes = Math.floor(this.lockoutSeconds / 60);
