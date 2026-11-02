@@ -50,7 +50,7 @@ class FacebookController extends Controller
             $facebookUser = Socialite::driver('facebook')->user();
         } catch (\Throwable $e) {
             Clog::write('auth_facebook', 'Facebook callback failed: ' . $e->getMessage(), Clog::ERROR);
-            return redirect()->route('auth.login')->with('error', 'Facebook sign-in failed. Please try again.');
+            return redirect()->route('auth.login')->with('error', vocab('user_social_signin_failed', ['provider' => 'Facebook']));
         }
 
         Clog::write(REG::LOG, 'Onboarding Facebook callback', [
@@ -70,14 +70,14 @@ class FacebookController extends Controller
 
         $pending = $this->socialAuth->getPending(self::PROVIDER);
         if (!$pending) {
-            return redirect()->route('auth.login')->with('error', 'Session expired. Please sign in with Facebook again.');
+            return redirect()->route('auth.login')->with('error', vocab('user_social_session_expired', ['provider' => 'Facebook']));
         }
 
         REG::init();
 
         return view('user::auth.facebook-link', [
             'wrapper' => REG::authWrapper(),
-            'title' => 'Link Facebook account',
+            'title' => vocab('user_link_provider_account', ['provider' => 'Facebook']),
             'email' => $pending['email'] ?? '',
         ]);
     }
@@ -158,7 +158,7 @@ class FacebookController extends Controller
             return redirect()->to($result['url']);
         }
 
-        $message = $result['message'] ?? 'Something went wrong.';
+        $message = $result['message'] ?? vocab('something_went_wrong');
         return redirect()->route('auth.login')->with('error', $message);
     }
 
@@ -174,7 +174,7 @@ class FacebookController extends Controller
         if (($result['action'] ?? '') === 'ok') {
             return response()->json([
                 'success' => true,
-                'message' => $result['message'] ?? 'OK',
+                'message' => $result['message'] ?? vocab('ok'),
                 'timer' => $result['timer'] ?? 0,
                 'confirmation' => $result['confirmation'] ?? null,
             ]);
@@ -192,7 +192,7 @@ class FacebookController extends Controller
             'success' => false,
             'message' => $result['message'] ?? null,
             'errors' => $result['errors'] ?? null,
-            'error' => $result['message'] ?? 'Request failed.',
+            'error' => $result['message'] ?? vocab('request_failed'),
         ]);
     }
 }

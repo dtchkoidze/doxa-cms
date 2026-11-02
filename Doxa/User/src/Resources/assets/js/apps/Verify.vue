@@ -6,15 +6,13 @@
         <Error v-if="fatal_error" :error="fatal_error" />
 
         <template v-else>
-            <Header title="Verification" />
+            <Header :title="vocab('vcb.user_verification')" />
 
             <div v-if="method === 'recovery'" class="mb-2 sm">
-                If an account with {{ login }} exists, we have sent a verification code to it. Enter the code below.
-                The code is valid for {{ code_expire_in }} minutes.
+                {{ vocab('vcb.user_recovery_code_sent_text', { login: login, minutes: code_expire_in }) }}
             </div>
             <div v-else class="mb-2 sm">
-                A verification code has been sent to {{ login }}. Enter the code below.
-                The code is valid for {{ code_expire_in }} minutes.
+                {{ vocab('vcb.user_code_sent_text', { login: login, minutes: code_expire_in }) }}
             </div>
 
             <div>
@@ -26,19 +24,18 @@
                     <div class="flex justify-start w-full">
                         <button @click="submitCode()" type="button" :disabled="locked || processing"
                             class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span>{{ locked ? `Try again in ${lockoutCountdown}` : 'Verify' }}</span>
+                            <span>{{ locked ? vocab('vcb.user_try_again_in', { time: lockoutCountdown }) : vocab('vcb.verify') }}</span>
                             <ButtonSpinner v-if="processing" />
                         </button>
                     </div>
 
                     <div class="flex flex-col mt-4 space-y-1 text-sm">
                         <div class="flex justify-between">
-                            <span>Did not receive verification message?</span>
-                            <a v-if="resend_timer <= 0 && !locked" href="#" class="link" @click.prevent="resendCode()">Resend
-                                code</a>
+                            <span>{{ vocab('vcb.user_did_not_receive_code') }}</span>
+                            <a v-if="resend_timer <= 0 && !locked" href="#" class="link" @click.prevent="resendCode()">{{ vocab('vcb.resend_code') }}</a>
                         </div>
 
-                        <span v-if="resend_timer > 0">Resend code in {{ formatResendTimer(resend_timer) }}.</span>
+                        <span v-if="resend_timer > 0">{{ vocab('vcb.user_resend_code_in', { time: formatResendTimer(resend_timer) }) }}</span>
                     </div>
 
                 </div>
@@ -49,11 +46,11 @@
                 class="flex flex-row gap-2 justify-between pt-5 mt-6 text-sm border-t border-gray-100 dark:border-gray-700/60">
                 <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/login">
-                    Sign In
+                    {{ vocab('vcb.log_in') }}
                 </a>
                 <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/register">
-                    Sign Up
+                    {{ vocab('vcb.register') }}
                 </a>
             </div>
         </template>
@@ -96,6 +93,7 @@ export default {
             processing: false,
             lockoutSeconds: 0,
             lockoutTimer: null,
+            lockoutError: '',
         }
     },
     computed: {
@@ -130,6 +128,7 @@ export default {
                                 if (!response.data.success) {
                                     this.errors.verification_code = response.data.error;
                                     if (response.data.retry_after) {
+                                        this.lockoutError = response.data.error;
                                         this.startLockout(response.data.retry_after);
                                     }
                                 }
@@ -195,7 +194,7 @@ export default {
         checkForm() {
             this.errors.verification_code = '';
             if (!this.form_data.verification_code.trim()) {
-                this.errors.verification_code = 'Verification code is required';
+                this.errors.verification_code = vocab('vcb.verification_code_required');
             }
         },
         isError() {
@@ -220,9 +219,11 @@ export default {
         clearLockout() {
             this.clearLockoutTimer();
             this.lockoutSeconds = 0;
-            if (this.errors.verification_code && this.errors.verification_code.indexOf('Too many verification attempts') === 0) {
+            // Убираем только текст блокировки, другую ошибку кода оставляем
+            if (this.lockoutError && this.errors.verification_code === this.lockoutError) {
                 this.errors.verification_code = '';
             }
+            this.lockoutError = '';
         },
         clearLockoutTimer() {
             if (this.lockoutTimer) {

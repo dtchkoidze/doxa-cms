@@ -38,11 +38,11 @@ trait ResponceTrait
     {
         $confirmation = [
             'type' => 'warning',
-            'title' => 'You already started registration process',
-            'message' => 'Click Confirm button to continue registration and confirm your email or phone number.',
+            'title' => vocab('user_registration_in_process_title'),
+            'message' => vocab('user_registration_in_process_text'),
             'buttons' => [
-                ['title' => 'Confirm', 'callback' => 'confirmAccount', 'timer' => REG::getResendCodeTimer()],
-                ['title' => 'Cancel', 'type' => 'cancel'],
+                ['title' => vocab('confirm'), 'callback' => 'confirmAccount', 'timer' => REG::getResendCodeTimer()],
+                ['title' => vocab('cancel'), 'type' => 'cancel'],
             ],
         ];
 
@@ -59,7 +59,7 @@ trait ResponceTrait
         return response()->json(collect([
             'success' => false,
             'errors' => [
-                'register_failed' => 'User with provided ' . REG::loginType() . ' already exists.',
+                'register_failed' => vocab('user_already_registered'),
             ],
         ]));
     }
@@ -69,7 +69,7 @@ trait ResponceTrait
         return response()->json(collect([
             'success' => false,
             'errors' => [
-                'login_failed' => ucfirst(REG::loginType()) . ' or password incorrect.',
+                'login_failed' => vocab('user_login_incorrect'),
             ],
         ]));
     }
@@ -98,10 +98,10 @@ trait ResponceTrait
     {
         $confirmation = [
             'type' => 'error',
-            'title' => 'Session expired',
-            'message' => 'Your session is expired. Start registration process again.',
+            'title' => vocab('user_session_expired'),
+            'message' => vocab('user_session_expired_register_text'),
             'buttons' => [
-                ['title' => 'OK', 'url' => route('auth.register')],
+                ['title' => vocab('ok'), 'url' => route('auth.register')],
             ],
         ];
 
@@ -117,11 +117,11 @@ trait ResponceTrait
     {
         $confirmation = [
             'type' => 'warning',
-            'title' => 'Too often!',
-            'message' => 'You can\'t resend code too often. Please wait until the timer finishes.',
+            'title' => vocab('user_too_often'),
+            'message' => vocab('user_resend_too_often_text'),
             'buttons' => [
-                ['title' => 'Resend code', 'style' => 'primary', 'callback' => 'confirmAccount', 'timer' => $timer],
-                ['title' => 'Cancel', 'type' => 'cancel'],
+                ['title' => vocab('resend_code'), 'style' => 'primary', 'callback' => 'confirmAccount', 'timer' => $timer],
+                ['title' => vocab('cancel'), 'type' => 'cancel'],
             ],
         ];
 
@@ -134,21 +134,22 @@ trait ResponceTrait
     protected function responceCodeSent($method)
     {
         // Восстановление: текст не раскрывает, зарегистрирован ли логин
+        $variables = ['minutes' => REG::codeExpireIn()];
         if ($method === 'recovery') {
-            $message = 'If an account with this ' . REG::loginType() . ' exists, a new verification code has been sent. Code valid for ' . REG::codeExpireIn() . ' minutes.';
+            $message = vocab('user_recovery_code_resent_text', $variables);
         } else {
             $message = REG::loginType() == 'email' ?
-                'Verification code has been sent to your email. Code valid for '.REG::codeExpireIn().' minutes.'
+                vocab('user_code_sent_to_email_text', $variables)
                 :
-                'Verification code has been sent to your phone number. Code valid for '.REG::codeExpireIn().' minutes.';
+                vocab('user_code_sent_to_phone_text', $variables);
         }
 
         $confirmation = [
             'type' => 'success',
-            'title' => 'Code sent',
+            'title' => vocab('user_code_sent'),
             'message' => $message,
             'buttons' => [
-                ['title' => 'OK', 'type' => 'cancel'],
+                ['title' => vocab('ok'), 'type' => 'cancel'],
             ],
         ];
 
@@ -164,10 +165,10 @@ trait ResponceTrait
     {
         $confirmation = [
             'type' => 'success',
-            'title' => 'Account successfully verified',
+            'title' => vocab('user_account_verified'),
             'message' => $data['message'],
             'buttons' => [
-                ['title' => 'OK', 'url' => !empty($data['url']) ? $data['url'] : REG::getSuccessAuthUrl()],
+                ['title' => vocab('ok'), 'url' => !empty($data['url']) ? $data['url'] : REG::getSuccessAuthUrl()],
             ],
         ];
 
@@ -181,10 +182,10 @@ trait ResponceTrait
     {
         $confirmation = [
             'type' => 'success',
-            'title' => 'Account not verified!',
+            'title' => vocab('user_account_not_verified'),
             'message' => $data['message'],
             'buttons' => [
-                ['title' => 'OK', 'url' => !empty($data['url']) ? $data['url'] : REG::getSuccessAuthUrl()],
+                ['title' => vocab('ok'), 'url' => !empty($data['url']) ? $data['url'] : REG::getSuccessAuthUrl()],
             ],
         ];
 
@@ -198,22 +199,22 @@ trait ResponceTrait
     {
         $url = REG::getSuccessAuthUrl();
         if($method == 'recovery'){
-            $message = 'Your password has been updated. Click OK button to automatically login.';
+            $message = vocab('user_password_updated_text');
         } else {
             if($active){
-                $message = 'Your account successfully created and activated. Click OK button to automatically login.';
+                $message = vocab('user_account_created_active_text');
             } else {
-                $message = 'Your account successfully created. Your role required manually activation. Click OK button to redirect to the activation status page.';
+                $message = vocab('user_account_created_inactive_text');
                 $url = route('auth.waiting_for_activate');
             }
         }
 
         $confirmation = [
             'type' => 'success',
-            'title' => 'Done!',
+            'title' => vocab('done'),
             'message' => $message,
             'buttons' => [
-                ['title' => 'OK', 'url' => $url],
+                ['title' => vocab('ok'), 'url' => $url],
             ],
         ];
 

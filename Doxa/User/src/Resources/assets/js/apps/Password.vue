@@ -2,14 +2,14 @@
     <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal />
 
-        <Header :title="method == 'register' ? 'Set up Your password' : 'Set a new password'"></Header>
+        <Header :title="method == 'register' ? vocab('vcb.user_set_up_password') : vocab('vcb.user_set_new_password')"></Header>
 
         <!------------ FORM -------------->
         <div class="space-y-3">
 
             <!---------- Password ------------>
             <div>
-                <label class="block mb-1 text-sm font-medium" for="password">Password <span
+                <label class="block mb-1 text-sm font-medium" for="password">{{ vocab('vcb.password') }} <span
                         class="text-red-500">*</span></label>
                 <div class="relative">
                     <input class="w-full form-input" :type="password_visible ? 'text' : 'password'"
@@ -27,7 +27,7 @@
 
             <!---------- Password confirmation ------------>
             <div>
-                <label class="block mb-1 text-sm font-medium" for="password">Confirm Password <span
+                <label class="block mb-1 text-sm font-medium" for="password">{{ vocab('vcb.confirm_password') }} <span
                         class="text-red-500">*</span></label>
                 <div class="relative">
                     <input class="w-full form-input" :type="password_visible ? 'text' : 'password'"
@@ -41,15 +41,15 @@
 
             <!---------- Password requirements ------------>
             <div>
-                <label class="block mb-1 text-sm font-medium" for="password">Password requirements</label>
+                <label class="block mb-1 text-sm font-medium" for="password">{{ vocab('vcb.password_requirements') }}</label>
                 <div class="text-xs text-gray-400" :class="password_validate.ln ? 'text-green-700' : ''"><i
-                        class="pr-1 fa-solid fa-check"></i> Length 8-20</div>
+                        class="pr-1 fa-solid fa-check"></i> {{ vocab('vcb.password_req_length') }}</div>
                 <div class="text-xs text-gray-400" :class="password_validate.uppercase ? 'text-green-700' : ''"><i
-                        class="pr-1 fa-solid fa-check"></i> One uppercase letter</div>
+                        class="pr-1 fa-solid fa-check"></i> {{ vocab('vcb.password_req_uppercase') }}</div>
                 <div class="text-xs text-gray-400" :class="password_validate.number ? 'text-green-700' : ''"><i
-                        class="pr-1 fa-solid fa-check"></i> One number</div>
+                        class="pr-1 fa-solid fa-check"></i> {{ vocab('vcb.password_req_number') }}</div>
                 <div class="text-xs text-gray-400" :class="password_validate.spec ? 'text-green-700' : ''"><i
-                        class="pr-1 fa-solid fa-check"></i> Any symbol except number and letter</div>
+                        class="pr-1 fa-solid fa-check"></i> {{ vocab('vcb.password_req_symbol') }}</div>
             </div>
 
             <!------------ SUBMIT -------------->
@@ -60,7 +60,7 @@
                     :disabled="processing"
                     @click="submit()"
                 >
-                    <span>Save password</span>
+                    <span>{{ vocab('vcb.save_password') }}</span>
                     <ButtonSpinner v-if="processing" />
                 </button>
             </div>
@@ -157,16 +157,16 @@ export default {
             this.errors.password = '';
             this.errors.password_confirmation = '';
             if (!this.form_data.password.trim()) {
-                this.errors.password = 'Password is required';
+                this.errors.password = vocab('vcb.password_required');
             } else {
                 if (!this.isPasswordValid()) {
-                    this.errors.password = 'Password does not meet the requirements';
+                    this.errors.password = vocab('vcb.password_requirements_not_met');
                 } else {
                     if (!this.form_data.password_confirmation.trim()) {
-                        this.errors.password_confirmation = 'Password confirmation is required';
+                        this.errors.password_confirmation = vocab('vcb.password_confirmation_required');
                     } else {
                         if (this.form_data.password !== this.form_data.password_confirmation) {
-                            this.errors.password_confirmation = 'Passwords do not match';
+                            this.errors.password_confirmation = vocab('vcb.passwords_do_not_match');
                         }
                     }
                 }

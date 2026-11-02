@@ -11,27 +11,27 @@
         <!------------ FOOTER -------------->
         <div class="flex flex-col mt-12">
             <div class="flex justify-between py-3 text-sm border-t border-b border-gray-100 dark:border-gray-700/60">
-                Already registered? 
+                {{ vocab('user_already_registered_question') }}
                 <a
                     class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/login">
-                    Sign In
+                    {{ vocab('log_in') }}
                 </a>
             </div>
             <div class="flex justify-between py-3 text-sm border-b border-gray-100 dark:border-gray-700/60">
-                Don't have an account? 
+                {{ vocab('user_no_account') }}
                 <a
                     class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/register">
-                    Sign Up
+                    {{ vocab('register') }}
                 </a>
             </div>
             <div class="flex justify-between py-3 text-sm border-b border-gray-100 dark:border-gray-700/60">
-                Can't access your account? 
+                {{ vocab('user_cant_access_account') }}
                 <a
                     class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/recovery">
-                    Recover Access
+                    {{ vocab('user_recover_access') }}
                 </a>
             </div>
         </div> 

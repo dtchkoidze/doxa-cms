@@ -1116,7 +1116,7 @@ class Registration
         $seconds = $seconds ?? $this->loginAvailableIn();
         $minutes = max(1, (int) ceil($seconds / 60));
 
-        return 'Too many login attempts. Try again in ' . $minutes . ' ' . ($minutes === 1 ? 'minute' : 'minutes') . '.';
+        return vocab('user_too_many_login_attempts', ['minutes' => $minutes]);
     }
 
     protected function verificationRateLimiterKey(): string
@@ -1150,7 +1150,7 @@ class Registration
         $seconds = $seconds ?? $this->verificationAvailableIn();
         $minutes = max(1, (int) ceil($seconds / 60));
 
-        return 'Too many verification attempts. Try again in ' . $minutes . ' ' . ($minutes === 1 ? 'minute' : 'minutes') . '.';
+        return vocab('user_too_many_verification_attempts', ['minutes' => $minutes]);
     }
 
     /**

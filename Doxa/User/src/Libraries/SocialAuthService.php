@@ -77,7 +77,7 @@ class SocialAuthService
     public function handleSocialUser(SocialiteUser $socialUser, string $providerName): array
     {
         if (!self::isAuthEnabled($providerName)) {
-            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
+            return ['action' => 'error', 'message' => vocab('user_social_method_disabled')];
         }
 
         $provider = $this->provider($providerName);
@@ -90,7 +90,7 @@ class SocialAuthService
         ], Clog::NOTICE);
 
         if ($socialId === '') {
-            return ['action' => 'error', 'message' => $provider['label'] . ' account id is missing.'];
+            return ['action' => 'error', 'message' => vocab('user_social_account_id_missing', ['provider' => $provider['label']])];
         }
 
         // Email is optional for social auth (Facebook often has none).
@@ -127,7 +127,7 @@ class SocialAuthService
                 if ($existingSocialId !== '' && $existingSocialId !== $socialId) {
                     return [
                         'action' => 'error',
-                        'message' => 'This email is linked to another ' . $provider['label'] . ' account.',
+                        'message' => vocab('user_social_email_linked_other', ['provider' => $provider['label']]),
                     ];
                 }
 
@@ -230,7 +230,7 @@ class SocialAuthService
         if (method_exists($user, 'isActive') && !$user->isActive()) {
             return [
                 'action' => 'error',
-                'message' => 'This account is not active yet. Please wait for activation or contact support.',
+                'message' => vocab('user_social_account_inactive'),
             ];
         }
 
@@ -299,7 +299,7 @@ class SocialAuthService
     public function linkWithPassword(string $password, string $providerName): array
     {
         if (!self::isAuthEnabled($providerName)) {
-            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
+            return ['action' => 'error', 'message' => vocab('user_social_method_disabled')];
         }
 
         $provider = $this->provider($providerName);
@@ -307,25 +307,25 @@ class SocialAuthService
         $pending = $this->getPending($providerName);
 
         if (!$pending) {
-            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+            return ['action' => 'error', 'message' => vocab('user_social_link_expired', ['provider' => $provider['label']])];
         }
 
         $user = User::find($pending['user_id']);
         if (!$user) {
             $this->clearPending($providerName);
-            return ['action' => 'error', 'message' => 'User not found.'];
+            return ['action' => 'error', 'message' => vocab('user_not_found')];
         }
 
         if (!Hash::check($password, $user->password)) {
             return [
                 'action' => 'error',
-                'errors' => ['password' => 'Password is incorrect.'],
+                'errors' => ['password' => vocab('password_incorrect')],
             ];
         }
 
         $socialId = (string) ($pending[$idColumn] ?? '');
         if ($socialId === '') {
-            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+            return ['action' => 'error', 'message' => vocab('user_social_link_expired', ['provider' => $provider['label']])];
         }
 
         return $this->completeLink($user, $socialId, $providerName);
@@ -340,7 +340,7 @@ class SocialAuthService
     public function sendLinkCode(string $providerName): array
     {
         if (!self::isAuthEnabled($providerName)) {
-            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
+            return ['action' => 'error', 'message' => vocab('user_social_method_disabled')];
         }
 
         $provider = $this->provider($providerName);
@@ -348,18 +348,18 @@ class SocialAuthService
         $pending = $this->getPending($providerName);
 
         if (!$pending) {
-            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+            return ['action' => 'error', 'message' => vocab('user_social_link_expired', ['provider' => $provider['label']])];
         }
 
         $user = User::find($pending['user_id']);
         if (!$user) {
             $this->clearPending($providerName);
-            return ['action' => 'error', 'message' => 'User not found.'];
+            return ['action' => 'error', 'message' => vocab('user_not_found')];
         }
 
         $socialId = (string) ($pending[$idColumn] ?? '');
         if ($socialId === '') {
-            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+            return ['action' => 'error', 'message' => vocab('user_social_link_expired', ['provider' => $provider['label']])];
         }
 
         $userId = (int) $user->id;
@@ -370,11 +370,11 @@ class SocialAuthService
                 'timer' => $timer,
                 'confirmation' => [
                     'type' => 'warning',
-                    'title' => 'Too often!',
-                    'message' => 'You can\'t resend code too often. Please wait until the timer finishes.',
+                    'title' => vocab('user_too_often'),
+                    'message' => vocab('user_resend_too_often_text'),
                     'buttons' => [
-                        ['title' => 'Resend code', 'style' => 'primary', 'callback' => 'sendCode', 'timer' => $timer],
-                        ['title' => 'Cancel', 'type' => 'cancel'],
+                        ['title' => vocab('resend_code'), 'style' => 'primary', 'callback' => 'sendCode', 'timer' => $timer],
+                        ['title' => vocab('cancel'), 'type' => 'cancel'],
                     ],
                 ],
             ];
@@ -408,13 +408,13 @@ class SocialAuthService
         return [
             'action' => 'ok',
             'timer' => $resendTimer,
-            'message' => 'We sent a confirmation code to ' . $user->email . '. It is valid for ' . $expireMinutes . ' minutes.',
+            'message' => vocab('user_link_code_sent_text', ['email' => $user->email, 'minutes' => $expireMinutes]),
             'confirmation' => [
                 'type' => 'success',
-                'title' => 'Code sent',
-                'message' => 'Code has been sent to your email. Code valid for ' . $expireMinutes . ' minutes.',
+                'title' => vocab('user_code_sent'),
+                'message' => vocab('user_code_sent_to_email_text', ['minutes' => $expireMinutes]),
                 'buttons' => [
-                    ['title' => 'OK', 'type' => 'cancel'],
+                    ['title' => vocab('ok'), 'type' => 'cancel'],
                 ],
             ],
         ];
@@ -428,19 +428,19 @@ class SocialAuthService
     public function linkWithCode(string $code, string $providerName): array
     {
         if (!self::isAuthEnabled($providerName)) {
-            return ['action' => 'error', 'message' => 'This sign-in method is disabled.'];
+            return ['action' => 'error', 'message' => vocab('user_social_method_disabled')];
         }
 
         $provider = $this->provider($providerName);
         $pending = $this->getPending($providerName);
 
         if (!$pending) {
-            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+            return ['action' => 'error', 'message' => vocab('user_social_link_expired', ['provider' => $provider['label']])];
         }
 
         $userId = (int) ($pending['user_id'] ?? 0);
         if ($userId < 1) {
-            return ['action' => 'error', 'message' => 'Link session expired. Try ' . $provider['label'] . ' sign-in again.'];
+            return ['action' => 'error', 'message' => vocab('user_social_link_expired', ['provider' => $provider['label']])];
         }
 
         $cacheKey = $this->linkCodeCacheKey($providerName, $userId);
@@ -465,7 +465,7 @@ class SocialAuthService
         $user = User::find($userId);
         if (!$user) {
             $this->clearPending($providerName);
-            return ['action' => 'error', 'message' => 'User not found.'];
+            return ['action' => 'error', 'message' => vocab('user_not_found')];
         }
 
         return $this->completeLink($user, (string) $payload['social_id'], $providerName);
@@ -558,7 +558,7 @@ class SocialAuthService
             $this->clearPending($providerName);
             return [
                 'action' => 'error',
-                'message' => 'This ' . $provider['label'] . ' account is already linked to another user.',
+                'message' => vocab('user_social_already_linked', ['provider' => $provider['label']]),
             ];
         }
 

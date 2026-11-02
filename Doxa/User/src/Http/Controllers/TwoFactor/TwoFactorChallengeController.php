@@ -42,7 +42,7 @@ class TwoFactorChallengeController extends Controller
 
         return view('user::auth.two-factor', [
             'wrapper' => REG::authWrapper(),
-            'title' => 'Two-factor authentication',
+            'title' => vocab('user_2fa_authenticator_title'),
             'challenge' => $state,
         ]);
     }

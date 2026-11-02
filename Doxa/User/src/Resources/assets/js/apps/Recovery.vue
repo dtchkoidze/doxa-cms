@@ -2,18 +2,18 @@
     <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal/>
 
-        <Header title="Enter your email"></Header>
+        <Header :title="vocab('vcb.user_enter_your_email')"></Header>
 
         <!------------ FORM -------------->
         <div class="space-y-3">
 
             <div class="mb-2 sm">
-                Enter your email and we'll send you a recovery code.
+                {{ vocab('vcb.user_recovery_intro') }}
             </div>
 
             <!------------ Email -------------->
             <div>
-                <label class="block mb-1 text-sm font-medium" for="email">Email Address <span class="text-red-500">*</span></label>
+                <label class="block mb-1 text-sm font-medium" for="email">{{ vocab('vcb.email') }} <span class="text-red-500">*</span></label>
                 <input
                     class="w-full form-input"
                     type="email"
@@ -36,7 +36,7 @@
                     :disabled="processing"
                     @click="submit()"
                 >
-                    <span>Next</span>
+                    <span>{{ vocab('vcb.next') }}</span>
                     <ButtonSpinner v-if="processing" />
                 </button>
             </div>
@@ -48,10 +48,10 @@
         <!------------ FOOTER -------------->
         <div class="flex flex-row justify-between gap-2 pt-5 mt-6 text-sm border-t border-gray-100 dark:border-gray-700/60">
             <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="/auth/login">
-                Sign In
+                {{ vocab('vcb.log_in') }}
             </a>
             <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="/auth/register">
-                Sign Up
+                {{ vocab('vcb.register') }}
             </a>
         </div>
 
@@ -125,11 +125,11 @@ export default {
         checkForm() {
             this.errors.email = '';
             if(!this.form_data.email.trim()) {
-                this.errors.email = 'Email is required';
+                this.errors.email = vocab('vcb.email_required');
             } else {
                 var email_valid = emailValidate(this.form_data.email);
                 if(!email_valid) {
-                    this.errors.email = 'Email is not valid';
+                    this.errors.email = vocab('vcb.email_invalid');
                 }
             }
         },

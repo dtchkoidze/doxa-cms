@@ -1,9 +1,9 @@
 <template>
     <div class="w-full max-w-sm px-4 py-8 mx-auto">
-        <Header title="Session expired"></Header>
+        <Header :title="vocab('vcb.user_session_expired')"></Header>
         <div class="flex items-center justify-between mt-6">
             <div class="mr-1">
-                Your session is expired. Please note that the verification code expires in {{ code_expire_in }} minutes.
+                {{ vocab('vcb.user_session_expired_code_text', { minutes: code_expire_in }) }}
             </div>
         </div>
 
@@ -13,14 +13,14 @@
                 <a
                     class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/login">
-                    Sign In
+                    {{ vocab('vcb.log_in') }}
                 </a>
             </div>
             <div class="text-sm">
                 <a
                     class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/register">
-                    Sign Up
+                    {{ vocab('vcb.register') }}
                 </a>
             </div>
         </div> 

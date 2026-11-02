@@ -33,7 +33,7 @@ class MobileAuthController
         if ($email === '' || $password === '') {
             return response()->json([
                 'success' => false,
-                'message' => 'Email and password are required',
+                'message' => vocab('user_email_password_required'),
             ], 422);
         }
 
@@ -49,21 +49,21 @@ class MobileAuthController
         if (!$user instanceof Authenticatable) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid credentials',
+                'message' => vocab('user_login_incorrect'),
             ], 401);
         }
 
         if (!$provider->validateCredentials($user, ['password' => $password])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid credentials',
+                'message' => vocab('user_login_incorrect'),
             ], 401);
         }
 
         if (method_exists($user, 'isActive') && !$user->isActive()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid credentials',
+                'message' => vocab('user_login_incorrect'),
             ], 401);
         }
 

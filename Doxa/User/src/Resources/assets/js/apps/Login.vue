@@ -2,14 +2,14 @@
     <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal />
 
-        <Header title="Welcome back!"></Header>
+        <Header :title="vocab('vcb.user_welcome_back')"></Header>
 
         <!------------ FORM -------------->
         <div class="space-y-3">
 
             <!------------ Email -------------->
             <div>
-                <label class="block mb-1 text-sm font-medium" for="email">Email</label>
+                <label class="block mb-1 text-sm font-medium" for="email">{{ vocab('vcb.email') }}</label>
                 <input class="w-full form-input" type="email" v-model="form_data.email" name="email" id="email"
                     autocomplete="email" inputmode="email"
                     :disabled="locked"
@@ -40,12 +40,12 @@
                 <div class="">
                     <label class="flex items-center">
                         <input type="checkbox" class="form-checkbox" v-model="form_data.remember" :disabled="locked" />
-                        <span class="ml-2 text-sm">{{ vocab('vcb.remember_me') }}</span>
+                        <span class="ml-2 text-sm">{{ vocab('vcb.user_remember_me') }}</span>
                     </label>
                 </div>
                 <button @click="submit()" type="button" :disabled="locked || processing"
                     class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span>{{ locked ? `Try again in ${lockoutCountdown}` : 'Sign In' }}</span>
+                    <span>{{ locked ? vocab('vcb.user_try_again_in', { time: lockoutCountdown }) : vocab('vcb.log_in') }}</span>
                     <ButtonSpinner v-if="processing" />
                 </button>
             </div>
@@ -58,7 +58,7 @@
                     <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
                 <div class="relative flex justify-center text-xs">
-                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-400">or</span>
+                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-400">{{ vocab('vcb.or') }}</span>
                 </div>
             </div>
 
@@ -66,21 +66,21 @@
             <FacebookAuthButton v-if="facebookAuthEnabled" />
 
             <div class="flex items-center justify-end">
-                <a class="text-sm underline hover:no-underline" href="/auth/recovery">Forgot Password?</a>
+                <a class="text-sm underline hover:no-underline" href="/auth/recovery">{{ vocab('vcb.user_forgot_password') }}</a>
             </div>
             <button v-if="auto_login_enabled && apiInWindow" class="btn btn-primary !bg-gray-700 "
                 @click="auto_login_enabled = !auto_login_enabled">
-                {{ auto_login_enabled ? 'Disable Auto Login' : 'Enable Auto Login' }}
+                {{ auto_login_enabled ? vocab('vcb.user_disable_auto_login') : vocab('vcb.user_enable_auto_login') }}
             </button>
         </div>
 
         <!------------ FOOTER -------------->
         <div class="pt-5 mt-6 border-t border-gray-100 dark:border-gray-700/60">
             <div class="text-sm">
-                Don’t you have an account?
+                {{ vocab('vcb.user_no_account') }}
                 <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     :href="registerHref">
-                    Sign Up
+                    {{ vocab('vcb.register') }}
                 </a>
             </div>
         </div>
@@ -122,6 +122,7 @@ export default {
             processing: false,
             lockoutSeconds: 0,
             lockoutTimer: null,
+            lockoutError: '',
         }
     },
     components: {
@@ -194,6 +195,7 @@ export default {
                         if (!response.data.success) {
                             this.setResponceErrors(response.data.errors);
                             if (response.data.retry_after) {
+                                this.lockoutError = this.errors.login_failed;
                                 this.startLockout(response.data.retry_after);
                             }
                         }
@@ -226,7 +228,7 @@ export default {
                         return;
                     }
                     if (!response.data.success) {
-                        const message = response.data.message || 'Login failed';
+                        const message = response.data.message || vocab('vcb.user_login_failed');
                         this.errors.login_failed = message;
                         if (response.data.errors) {
                             this.setResponceErrors(response.data.errors);
@@ -246,12 +248,12 @@ export default {
         checkForm() {
             this.errors.email = '';
             if (!this.form_data.email) {
-                this.errors.email = 'Email is required';
+                this.errors.email = vocab('vcb.email_required');
             }
 
             this.errors.password = '';
             if (!this.form_data.password) {
-                this.errors.password = 'Password is required';
+                this.errors.password = vocab('vcb.password_required');
             }
 
         },
@@ -283,9 +285,11 @@ export default {
         clearLockout() {
             this.clearLockoutTimer();
             this.lockoutSeconds = 0;
-            if (this.errors.login_failed && this.errors.login_failed.indexOf('Too many login attempts') === 0) {
+            // Убираем только текст блокировки, другую ошибку входа оставляем
+            if (this.lockoutError && this.errors.login_failed === this.lockoutError) {
                 this.errors.login_failed = '';
             }
+            this.lockoutError = '';
         },
         clearLockoutTimer() {
             if (this.lockoutTimer) {

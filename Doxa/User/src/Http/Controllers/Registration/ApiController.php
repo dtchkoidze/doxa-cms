@@ -65,7 +65,7 @@ class ApiController extends Controller
             if (method_exists($user, 'hasReadyStatus') && $user->hasReadyStatus()) {
                 REG::setAuthCookie('ready');
                 return $this->accountVerifedAndRedirect([
-                    'message' => 'Your account is verified and waiting for activation. By clicking OK you will be redirected to activation status page.',
+                    'message' => vocab('user_verified_waiting_activation_text'),
                     'url' => route('auth.waiting_for_activate'),
                 ]);
             }
@@ -198,7 +198,7 @@ class ApiController extends Controller
         // code expired
         if (REG::isVerificationCodeExpired()) {
             Clog::write(REG::LOG, 'Verification code is expired.', Clog::NOTICE);
-            return $this->errorResponce('Verification code is expired.');
+            return $this->errorResponce(vocab('verification_code_expired'));
         }
 
         // wrong code
@@ -208,7 +208,7 @@ class ApiController extends Controller
             if (REG::tooManyVerificationAttempts()) {
                 return $this->responceVerificationLocked(REG::verificationAvailableIn());
             }
-            return $this->errorResponce('Wrong verification code.');
+            return $this->errorResponce(vocab('invalid_verification_code'));
         }
 
         REG::clearVerificationAttempts();
@@ -241,7 +241,7 @@ class ApiController extends Controller
 
         if ($method == 'recovery') {
             if (REG::checkNewPasswordSameAsOld(request('password'))) {
-                return $this->errorsResponce(['password' => 'New password must be different from old one.']);
+                return $this->errorsResponce(['password' => vocab('password_is_the_same')]);
             }
         }
 

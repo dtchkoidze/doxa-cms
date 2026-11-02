@@ -3,10 +3,10 @@
 
         <ConfirmModal/>
         
-        <Header title="Waiting for Activate"/>
+        <Header :title="vocab('vcb.user_waiting_activation_title')"/>
 
         <div class="mb-6 sm">
-            Your account {{ login }} is verifed and waiting for activation. If you are waiting too long, please contact website administrator.
+            {{ vocab('vcb.user_waiting_activation_text', { login: login }) }}
         </div>
 
         <!------------ FOOTER -------------->
@@ -14,12 +14,12 @@
             <a
                 class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                 href="/auth/login">
-                Sign In
+                {{ vocab('vcb.log_in') }}
             </a>
             <a
                 class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                 href="/auth/register">
-                Sign Up
+                {{ vocab('vcb.register') }}
             </a>
         </div> 
 

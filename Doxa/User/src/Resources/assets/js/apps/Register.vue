@@ -2,7 +2,7 @@
     <div class="px-4 py-8 mx-auto w-full max-w-sm" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal />
 
-        <Header title="Sign Up"></Header>
+        <Header :title="vocab('vcb.register')"></Header>
 
         <!------------ FORM -------------->
         <div class="space-y-3">
@@ -10,7 +10,7 @@
             <!------------ Roles -------------->
             <div v-if="_roles">
                 <label class="block mb-1 text-sm font-medium" for="role">
-                    Your Role <span class="text-red-500">*</span>
+                    {{ vocab('vcb.user_your_role') }} <span class="text-red-500">*</span>
                 </label>
                 <dropdown :options="_roles" :_selected="form_data.role" />
                 <FieldError :error="errors.role" />
@@ -18,7 +18,7 @@
 
             <!------------ Email -------------->
             <div>
-                <label class="block mb-1 text-sm font-medium" for="email">Email Address <span
+                <label class="block mb-1 text-sm font-medium" for="email">{{ vocab('vcb.email') }} <span
                         class="text-red-500">*</span></label>
                 <input class="w-full form-input" type="email" v-model="form_data.email" name="email" id="email"
                     autocomplete="email" inputmode="email" :class="errors.email ? '!border-red-500' : ''"
@@ -30,7 +30,7 @@
             <div class="flex justify-end items-center">
                 <button @click="submit()" type="button" :disabled="processing"
                     class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span>Submit</span>
+                    <span>{{ vocab('vcb.submit') }}</span>
                     <ButtonSpinner v-if="processing" />
                 </button>
             </div>
@@ -42,7 +42,7 @@
                     <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
                 <div class="relative flex justify-center text-xs">
-                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-400">or</span>
+                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-400">{{ vocab('vcb.or') }}</span>
                 </div>
             </div>
 
@@ -53,10 +53,10 @@
         <!------------ FOOTER -------------->
         <div class="pt-5 mt-6 border-t border-gray-100 dark:border-gray-700/60">
             <div class="text-sm">
-                Already have an account?
+                {{ vocab('vcb.user_already_have_account') }}
                 <a class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/login">
-                    Sign In
+                    {{ vocab('vcb.log_in') }}
                 </a>
             </div>
         </div>
@@ -141,17 +141,17 @@ export default {
         checkForm() {
             this.errors.email = '';
             if (!this.form_data.email.trim()) {
-                this.errors.email = 'Email is required';
+                this.errors.email = vocab('vcb.email_required');
             } else {
                 var email_valid = emailValidate(this.form_data.email);
                 if (!email_valid) {
-                    this.errors.email = 'Email is not valid';
+                    this.errors.email = vocab('vcb.email_invalid');
                 }
             }
 
             if (this.roles) {
                 if (this.form_data.role == 0) {
-                    this.errors.role = 'Choose Your role';
+                    this.errors.role = vocab('vcb.user_choose_role');
                 }
             }
         },
@@ -206,7 +206,7 @@ export default {
         if (this._roles) {
             this._roles.unshift({
                 id: 0,
-                title: 'Select your Role',
+                title: vocab('vcb.user_choose_role'),
             })
         }
     },

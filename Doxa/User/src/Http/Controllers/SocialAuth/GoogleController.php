@@ -51,7 +51,7 @@ class GoogleController extends Controller
             $googleUser = Socialite::driver('google')->user();
         } catch (\Throwable $e) {
             Clog::write('auth_google', 'Google callback failed: ' . $e->getMessage(), Clog::ERROR);
-            return redirect()->route('auth.login')->with('error', 'Google sign-in failed. Please try again.');
+            return redirect()->route('auth.login')->with('error', vocab('user_social_signin_failed', ['provider' => 'Google']));
         }
 
         Clog::write(REG::LOG, 'Onboarding Google callback', [
@@ -71,7 +71,7 @@ class GoogleController extends Controller
 
         $pending = $this->socialAuth->getPending(self::PROVIDER);
         if (!$pending) {
-            return redirect()->route('auth.login')->with('error', 'Session expired. Please sign in with Google again.');
+            return redirect()->route('auth.login')->with('error', vocab('user_social_session_expired', ['provider' => 'Google']));
         }
 
         // Keep wrapper consistent with other auth pages (custom_auth.wrapper / mode cookie)
@@ -79,7 +79,7 @@ class GoogleController extends Controller
 
         return view('user::auth.google-link', [
             'wrapper' => REG::authWrapper(),
-            'title' => 'Link Google account',
+            'title' => vocab('user_link_provider_account', ['provider' => 'Google']),
             'email' => $pending['email'] ?? '',
         ]);
     }
@@ -160,7 +160,7 @@ class GoogleController extends Controller
             return redirect()->to($result['url']);
         }
 
-        $message = $result['message'] ?? 'Something went wrong.';
+        $message = $result['message'] ?? vocab('something_went_wrong');
         return redirect()->route('auth.login')->with('error', $message);
     }
 
@@ -176,7 +176,7 @@ class GoogleController extends Controller
         if (($result['action'] ?? '') === 'ok') {
             return response()->json([
                 'success' => true,
-                'message' => $result['message'] ?? 'OK',
+                'message' => $result['message'] ?? vocab('ok'),
                 'timer' => $result['timer'] ?? 0,
                 'confirmation' => $result['confirmation'] ?? null,
             ]);
@@ -194,7 +194,7 @@ class GoogleController extends Controller
             'success' => false,
             'message' => $result['message'] ?? null,
             'errors' => $result['errors'] ?? null,
-            'error' => $result['message'] ?? 'Request failed.',
+            'error' => $result['message'] ?? vocab('request_failed'),
         ]);
     }
 }

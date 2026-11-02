@@ -10,19 +10,19 @@
         <!------------ FOOTER -------------->
         <div class="flex flex-col gap-2 pt-5 mt-6 border-t border-gray-100 dark:border-gray-700/60">
             <div class="text-sm">
-                Have another account? 
+                {{ vocab('vcb.user_have_another_account') }}
                 <a
                     class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/login">
-                    Sign In
+                    {{ vocab('vcb.log_in') }}
                 </a>
             </div>
             <div class="text-sm">
-                Register another account? 
+                {{ vocab('vcb.user_register_another_account') }}
                 <a
                     class="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400"
                     href="/auth/register">
-                    Sign Up
+                    {{ vocab('vcb.register') }}
                 </a>
             </div>
         </div> 

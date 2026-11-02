@@ -26,7 +26,7 @@ class RegistrationController extends Controller
 
         return view('user::auth.login')->with([
             'wrapper' => REG::authWrapper(),
-            'title' => 'Sign In',
+            'title' => vocab('log_in'),
         ]);
     }
 
@@ -42,7 +42,7 @@ class RegistrationController extends Controller
         return view('user::auth.register', [
             'roles' => REG::profileRoles(),
             'wrapper' => REG::authWrapper(),
-            'title' => 'Sign Up',
+            'title' => vocab('register'),
         ]);
     }
 
@@ -57,7 +57,7 @@ class RegistrationController extends Controller
         
         return view('user::auth.recovery', [
             'wrapper' => REG::authWrapper(),
-            'title' => 'Recovery',
+            'title' => vocab('user_recovery_title'),
         ]);
     }
 
@@ -77,7 +77,7 @@ class RegistrationController extends Controller
             'code_expire_in' => REG::codeExpireIn(),
             'method' => $method,
             'wrapper' => REG::authWrapper(),
-            'title' => $method == 'register' ? 'Verification' : 'Access recovery: Verification',
+            'title' => $method == 'register' ? vocab('user_verification') : vocab('user_recovery_verification_title'),
         ];
 
         return view('user::auth.verify', $data);
@@ -100,7 +100,7 @@ class RegistrationController extends Controller
             'login' => REG::login(),
             'login_type' => REG::loginType(),
             'wrapper' => REG::authWrapper(),
-            'title' => 'Set Up Password',
+            'title' => vocab('user_set_password_title'),
             'method' => $method,
         ];
 
@@ -133,7 +133,7 @@ class RegistrationController extends Controller
 
         return view('user::auth.suspended', [
             'wrapper' => REG::authWrapper(),
-            'title' => 'Account suspended',
+            'title' => vocab('user_suspended_title'),
         ]);
     }
 
@@ -155,7 +155,7 @@ class RegistrationController extends Controller
             'login' => REG::login(),
             'login_type' => REG::loginType(),
             'wrapper' => REG::authWrapper(),
-            'title' => 'Waiting for activate',
+            'title' => vocab('user_waiting_activation_title'),
         ];
 
         return view('user::auth.waiting-for-activate', $data);
@@ -167,17 +167,17 @@ class RegistrationController extends Controller
 
         switch ($error) {
             case 'session-expired':
-                $title = 'Session expired';
+                $title = vocab('user_session_expired');
                 $_error = [
-                    'title' => 'Session expired',
-                    'message' => 'Your session has expired. Please Log In or Sign Up again.',
+                    'title' => $title,
+                    'message' => vocab('user_session_expired_text'),
                 ];
                 break;
             case 'invalid-method':
-                $title = 'Invalid method';
+                $title = vocab('user_invalid_method_title');
                 $_error = [
-                    'title' => 'Using invalid method',
-                    'message' => 'Backend error. Received invalid method parameter. It\'s a bug. Please let us know about it.',
+                    'title' => $title,
+                    'message' => vocab('user_invalid_method_text'),
                 ];
                 break;
             default:

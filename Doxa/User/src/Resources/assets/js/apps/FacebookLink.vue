@@ -2,21 +2,20 @@
     <div class="w-full max-w-sm px-4 py-8 mx-auto" :class="processing ? 'pointer-events-none' : ''">
         <ConfirmModal />
 
-        <Header title="Link Facebook account"></Header>
+        <Header :title="vocab('vcb.user_link_provider_account', { provider: 'Facebook' })"></Header>
 
         <div class="mb-4 text-sm text-gray-600 dark:text-gray-300">
             <p class="mb-2">
-                <strong>{{ email }}</strong> is already registered.
+                {{ vocab('vcb.user_email_already_registered', { email: email }) }}
             </p>
             <p>
-                Link your Facebook account to this profile? You will be able to sign in with
-                email/password or Facebook.
+                {{ vocab('vcb.user_link_provider_question', { provider: 'Facebook' }) }}
             </p>
         </div>
 
         <div class="space-y-3">
             <div>
-                <label class="block mb-1 text-sm font-medium" for="password">Confirm with password</label>
+                <label class="block mb-1 text-sm font-medium" for="password">{{ vocab('vcb.user_confirm_with_password') }}</label>
                 <input class="w-full form-input" type="password" v-model="password" id="password"
                     autocomplete="current-password"
                     :class="errors.password ? '!border-red-500' : ''"
@@ -26,7 +25,7 @@
 
             <div class="flex justify-end">
                 <button type="button" class="inline-flex items-center justify-center btn-primary" :disabled="processing" @click="linkWithPassword()">
-                    <span>Link with password</span>
+                    <span>{{ vocab('vcb.user_link_with_password') }}</span>
                     <ButtonSpinner v-if="processing === 'password'" />
                 </button>
             </div>
@@ -36,7 +35,7 @@
                     <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
                 <div class="relative flex justify-center text-xs">
-                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-400">or</span>
+                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-400">{{ vocab('vcb.or') }}</span>
                 </div>
             </div>
 
@@ -44,15 +43,14 @@
                 <button type="button"
                     class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
                     :disabled="processing" @click="sendCode()">
-                    <span>Send confirmation code to email</span>
+                    <span>{{ vocab('vcb.user_send_confirmation_code') }}</span>
                     <ButtonSpinner v-if="processing === 'send'" />
                 </button>
             </template>
 
             <template v-else>
                 <div class="mb-2 sm">
-                    A verification code has been sent to {{ email }}. Enter the code below.
-                    Code valid for {{ codeExpireIn }} minutes.
+                    {{ vocab('vcb.user_code_sent_text', { login: email, minutes: codeExpireIn }) }}
                 </div>
 
                 <div class="flex flex-col justify-between space-y-3 items-left">
@@ -63,19 +61,18 @@
                     <div class="flex justify-start w-full">
                         <button @click="verifyCode()" type="button" :disabled="processing"
                             class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium transition btn-primary hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span>Verify</span>
+                            <span>{{ vocab('vcb.verify') }}</span>
                             <ButtonSpinner v-if="processing === 'verify'" />
                         </button>
                     </div>
 
                     <div class="flex flex-col mt-4 space-y-1 text-sm">
                         <div class="flex justify-between">
-                            <span>Did not receive verification message?</span>
-                            <a v-if="resend_timer <= 0" href="#" class="link" @click.prevent="sendCode()">Resend
-                                code</a>
+                            <span>{{ vocab('vcb.user_did_not_receive_code') }}</span>
+                            <a v-if="resend_timer <= 0" href="#" class="link" @click.prevent="sendCode()">{{ vocab('vcb.resend_code') }}</a>
                         </div>
 
-                        <span v-if="resend_timer > 0">Resend code in {{ formatResendTimer(resend_timer) }}.</span>
+                        <span v-if="resend_timer > 0">{{ vocab('vcb.user_resend_code_in', { time: formatResendTimer(resend_timer) }) }}</span>
                     </div>
                 </div>
             </template>
@@ -83,7 +80,7 @@
             <BannerError :error="errors.form" />
 
             <div class="pt-4 text-sm text-center">
-                <a class="text-violet-500 hover:underline" href="/auth/facebook/link/cancel">Cancel</a>
+                <a class="text-violet-500 hover:underline" href="/auth/facebook/link/cancel">{{ vocab('vcb.cancel') }}</a>
             </div>
         </div>
     </div>
@@ -121,7 +118,7 @@ export default {
             this.errors.password = '';
             this.errors.form = '';
             if (!this.password) {
-                this.errors.password = 'Password is required';
+                this.errors.password = vocab('vcb.password_required');
                 return;
             }
             this.processing = 'password';
@@ -136,13 +133,13 @@ export default {
                             const p = response.data.errors.password;
                             this.errors.password = Array.isArray(p) ? p.join(', ') : p;
                         } else {
-                            this.errors.form = response.data.error || response.data.message || 'Failed';
+                            this.errors.form = response.data.error || response.data.message || vocab('vcb.error');
                         }
                     }
                     this.processing = false;
                 })
                 .catch(() => {
-                    this.errors.form = 'Request failed';
+                    this.errors.form = vocab('vcb.request_failed');
                     this.processing = false;
                 });
         },
@@ -175,12 +172,12 @@ export default {
                         this.resend_timer = response.data.timer;
                         this.incrementCodeTimer();
                     } else if (!response.data.confirmation) {
-                        this.errors.form = response.data.error || response.data.message || 'Failed';
+                        this.errors.form = response.data.error || response.data.message || vocab('vcb.error');
                     }
                     this.processing = false;
                 })
                 .catch(() => {
-                    this.errors.form = 'Request failed';
+                    this.errors.form = vocab('vcb.request_failed');
                     this.processing = false;
                 });
         },
@@ -188,7 +185,7 @@ export default {
             this.errors.code = '';
             this.errors.form = '';
             if (!this.code || this.code.length < 6) {
-                this.errors.code = 'Verification code is required';
+                this.errors.code = vocab('vcb.verification_code_required');
                 return;
             }
             this.processing = 'verify';
@@ -203,13 +200,13 @@ export default {
                             const c = response.data.errors.code;
                             this.errors.code = Array.isArray(c) ? c.join(', ') : c;
                         } else {
-                            this.errors.form = response.data.error || response.data.message || 'Failed';
+                            this.errors.form = response.data.error || response.data.message || vocab('vcb.error');
                         }
                     }
                     this.processing = false;
                 })
                 .catch(() => {
-                    this.errors.form = 'Request failed';
+                    this.errors.form = vocab('vcb.request_failed');
                     this.processing = false;
                 });
         },
