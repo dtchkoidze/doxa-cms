@@ -291,7 +291,20 @@ class Registration
      */
     protected ?string $plain_verification_secret = null;
 
+    /**
+     * Срок cookie auth_data в минутах для шагов после ввода кода (password, ready)
+     *
+     * @var integer
+     */
     protected $auth_token_expire = 10;
+
+    /**
+     * Срок cookie auth_data в минутах на шаге ввода кода (verify, recovery). Дольше срока кода:
+     * после истечения кода пользователь остаётся на странице кода и запрашивает новый, а не теряет регистрацию.
+     *
+     * @var integer
+     */
+    protected int $code_stage_cookie_expire = 60 * 24;
 
     protected $v_hash_token_expire = 5;
 
@@ -832,7 +845,8 @@ class Registration
         Clog::write(self::LOG, '002 $this->user->v_hash: ' . $this->user->v_hash, Clog::DEBUG);
         $data = (['v_hash' => $this->user->v_hash, 'login_type' => $this->login_type, 'stage' => $stage]);
         Clog::write(self::LOG, 'Write cookie ' . $this->auth_cookie_name . ': ' . json_encode($data), Clog::DEBUG);
-        Cookie::queue($this->auth_cookie_name, json_encode($data), $this->auth_token_expire);
+        $expire = in_array($stage, ['verify', 'recovery'], true) ? $this->code_stage_cookie_expire : $this->auth_token_expire;
+        Cookie::queue($this->auth_cookie_name, json_encode($data), $expire);
 
         return $this;
     }
@@ -888,7 +902,7 @@ class Registration
             'decoy' => true,
             'login' => $this->login,
             'sent_at' => $this->recovery_decoy['sent_at'],
-        ]), $this->auth_token_expire);
+        ]), $this->code_stage_cookie_expire);
 
         return $this;
     }

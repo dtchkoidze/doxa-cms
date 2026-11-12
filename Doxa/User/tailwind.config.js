@@ -1,5 +1,6 @@
 import plugin from "tailwindcss/plugin";
 import forms from '@tailwindcss/forms';
+import defaultTheme from 'tailwindcss/defaultTheme';
 import path from "path";
 import { loadEnv } from "vite";
 
@@ -102,7 +103,9 @@ export default {
         },
       },
       fontFamily: {
-        inter: ['Inter', 'sans-serif'],
+        // Noto Sans Georgian подключён только для грузинских символов (georgian-font.css)
+        sans: ['"Noto Sans Georgian"', ...defaultTheme.fontFamily.sans],
+        inter: ['Inter', '"Noto Sans Georgian"', 'sans-serif'],
       },
       fontSize: {
         xs: ['0.75rem', { lineHeight: '1.5' }],

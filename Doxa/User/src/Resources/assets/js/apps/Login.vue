@@ -13,7 +13,8 @@
                 <input class="w-full form-input" type="email" v-model="form_data.email" name="email" id="email"
                     autocomplete="email" inputmode="email"
                     :disabled="locked"
-                    :class="!form_data.email && errors.email ? '!border-red-500' : ''" @input="errors.email = false" />
+                    :class="!form_data.email && errors.email ? '!border-red-500' : ''" @input="errors.email = false"
+                    @keyup.enter="submit()" />
                 <FieldError :error="errors.email" />
             </div>
 
@@ -25,7 +26,7 @@
                         name="password" id="password" v-model="form_data.password" autocomplete="current-password"
                         :disabled="locked"
                         :class="!form_data.password && errors.password ? '!border-red-500' : ''"
-                        @input="errors.password = false" />
+                        @input="errors.password = false" @keyup.enter="submit()" />
                     <FieldError :error="errors.password" />
                     <div class="absolute z-10 cursor-pointer top-2 right-3 w-[22px] text-left" id="toggle-password"
                         @click="password_visible = !password_visible">
@@ -162,7 +163,7 @@ export default {
             return document.getElementById('auth-app')?.dataset?.authSuccessUrl || '/welcome';
         },
         submit() {
-            if (this.locked) {
+            if (this.locked || this.processing) {
                 return;
             }
             this.processing = true;

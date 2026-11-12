@@ -102,7 +102,8 @@ class ApiController extends Controller
      * - validate request
      * - check if user exists
      *      - if exists:
-     *          - if user has not finished registration, offer to finish registration
+     *          - if user has not finished registration, send a new code (unless resend timer is running)
+     *            and redirect to verification page
      *          - else return user already registred
      *      - else 
      *          create user
@@ -134,8 +135,14 @@ class ApiController extends Controller
                     REG::setVerificationdPendingStatus();
                 }
                 REG::persistOnboarding(clearSession: false, replaceSuccessUrl: false, useSession: false);
+                // Регистрация не завершена: новый код и страница кода. Пока не прошла пауза повторной отправки,
+                // код не шлём — действует прежний, страница кода покажет таймер
+                if (!REG::getResendCodeTimer()) {
+                    REG::refreshSecret()->sendMessage('register');
+                    REG::clearVerificationAttempts();
+                }
                 REG::setAuthCookie('verify');
-                return $this->responceRegistrationInProcess();
+                return $this->redirectResponce(route('auth.verify', ['method' => 'register']));
             }
             Clog::write(REG::LOG, 'User has not pending status or active, status: ' . REG::user()->getStatus() . ', active: ' . REG::user()->isActive() . ' => return error User exists ',  Clog::DEBUG);
             return $this->responceUserAlreadyRegistred();

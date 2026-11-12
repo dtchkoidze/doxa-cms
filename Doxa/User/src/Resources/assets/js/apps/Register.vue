@@ -202,6 +202,11 @@ export default {
         },
     },
     created() {
+        // Email из адреса страницы (?email=), например из приглашения, подставляется в поле
+        const email = new URLSearchParams(window.location.search).get('email');
+        if (email) {
+            this.form_data.email = email;
+        }
         this._roles = this.roles;
         if (this._roles) {
             this._roles.unshift({

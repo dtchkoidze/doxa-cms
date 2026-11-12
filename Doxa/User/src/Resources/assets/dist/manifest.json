@@ -24,12 +24,16 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2"
   },
   "src/Resources/assets/css/user.css": {
-    "file": "assets/user-B2gkEy0R.css",
+    "file": "assets/user-D8s2Xze7.css",
     "src": "src/Resources/assets/css/user.css",
     "isEntry": true
   },
+  "src/Resources/assets/fonts/NotoSansGeorgian-georgian.woff2": {
+    "file": "assets/NotoSansGeorgian-georgian-B0rocz4e.woff2",
+    "src": "src/Resources/assets/fonts/NotoSansGeorgian-georgian.woff2"
+  },
   "src/Resources/assets/js/user.js": {
-    "file": "assets/user-DEYDWRuP.js",
+    "file": "assets/user-Ddv0qwDw.js",
     "name": "user",
     "src": "src/Resources/assets/js/user.js",
     "isEntry": true,

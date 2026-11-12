@@ -34,26 +34,6 @@ trait ResponceTrait
         ]));
     }
 
-    protected function responceRegistrationInProcess($data = [])
-    {
-        $confirmation = [
-            'type' => 'warning',
-            'title' => vocab('user_registration_in_process_title'),
-            'message' => vocab('user_registration_in_process_text'),
-            'buttons' => [
-                ['title' => vocab('confirm'), 'callback' => 'confirmAccount', 'timer' => REG::getResendCodeTimer()],
-                ['title' => vocab('cancel'), 'type' => 'cancel'],
-            ],
-        ];
-
-        $confirmation = array_merge($confirmation, $data);
-
-        return response()->json(collect([
-            'success' => true,
-            'confirmation' => $confirmation,
-        ]));
-    }
-
     protected function responceUserAlreadyRegistred()
     {
         return response()->json(collect([
