@@ -9,4 +9,6 @@ return [
     'resend_seconds' => 60,
     'max_attempts' => 5,
     'decay_minutes' => 15,
+    // Сколько минут после кода подтверждения важное действие не спрашивает код повторно (в той же сессии)
+    'action_confirm_ttl_minutes' => 5,
 ];

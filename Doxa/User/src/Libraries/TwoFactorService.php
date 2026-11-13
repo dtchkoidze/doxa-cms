@@ -34,6 +34,9 @@ class TwoFactorService
 
     public const EMAIL_CHANGE_KEY = 'two_factor_email_change';
 
+    /** Сессия: когда пользователь последний раз подтвердил важное действие кодом 2FA. */
+    public const ACTION_CONFIRMED_KEY = 'two_factor_action_confirmed';
+
     public function __construct(
         private readonly TwoFactorTotp $totp = new TwoFactorTotp(),
     ) {
@@ -758,6 +761,82 @@ class TwoFactorService
     }
 
     /**
+     * Начинает подтверждение важного действия кодом 2FA (действие выполняет хост, код проверяет confirmAction).
+     * Канал — способ пользователя по умолчанию; для почты сразу шлёт код (повторно — не раньше resend_seconds).
+     * Возвращает канал и маску почты (и таймеры письма) или строку ошибки:
+     * two_factor_required — 2FA не включена; no_email — у пользователя нет почты.
+     *
+     * @return array{channel: string, masked_email: ?string, timer?: int, code_expire_in?: int}|string
+     */
+    public function startActionConfirm(int $userId): array|string
+    {
+        if (!$this->hasConfirmedMethod($userId)) {
+            return 'two_factor_required';
+        }
+
+        $channel = $this->emailChangeChannel($userId);
+        $maskedEmail = $this->maskEmail($this->normalizedEmail($this->userRow($userId)->email));
+        if ($channel === self::METHOD_TOTP) {
+            return ['channel' => self::METHOD_TOTP, 'masked_email' => $maskedEmail];
+        }
+
+        $send = $this->sendEmailForChannel($userId, $channel);
+        if (is_string($send)) {
+            return $send;
+        }
+
+        return array_merge(['channel' => $channel, 'masked_email' => $maskedEmail], $send);
+    }
+
+    /**
+     * Проверяет код подтверждения важного действия: код Authenticator или код из письма startActionConfirm.
+     * Неверные попытки ограничены, как у входа (max_attempts за decay_minutes). При успехе код из письма гасится,
+     * а подтверждение действует в этой сессии action_confirm_ttl_minutes (isActionConfirmed).
+     * Возвращает true или строку ошибки: two_factor_required, invalid_code, locked.
+     *
+     * @return true|string
+     */
+    public function confirmAction(int $userId, string $code): bool|string
+    {
+        if (!$this->hasConfirmedMethod($userId)) {
+            return 'two_factor_required';
+        }
+
+        $lock = $this->attemptLock($userId);
+        if (RateLimiter::tooManyAttempts($lock, (int) config('user.two_factor.max_attempts', 5))) {
+            return 'locked';
+        }
+
+        $valid = $this->verifyTotp($userId, $code)
+            || ($this->methodConfirmed($userId, self::METHOD_EMAIL) && $this->emailCodeFresh($userId) && $this->verifyUserSecret($userId, $code));
+        if (!$valid) {
+            RateLimiter::hit($lock, (int) config('user.two_factor.decay_minutes', 15) * 60);
+
+            return 'invalid_code';
+        }
+
+        RateLimiter::clear($lock);
+        $this->invalidateUserSecret($userId);
+        session([self::ACTION_CONFIRMED_KEY => ['user_id' => $userId, 'at' => time()]]);
+
+        return true;
+    }
+
+    /**
+     * Возвращает true, если пользователь в этой сессии подтвердил важное действие кодом
+     * не раньше action_confirm_ttl_minutes назад: второй код подряд не спрашивается.
+     */
+    public function isActionConfirmed(int $userId): bool
+    {
+        $confirmed = session(self::ACTION_CONFIRMED_KEY);
+        if (!is_array($confirmed) || (int) $confirmed['user_id'] !== $userId) {
+            return false;
+        }
+
+        return time() - (int) $confirmed['at'] <= (int) config('user.two_factor.action_confirm_ttl_minutes', 5) * 60;
+    }
+
+    /**
      * Меняет пароль. Если пароль уже задан, требует верный текущий пароль.
      * Возвращает true или строку ошибки.
      *
@@ -933,6 +1012,19 @@ class TwoFactorService
         }
 
         return Hash::check($code, $user->secret);
+    }
+
+    /**
+     * Возвращает true, если код из письма отправлен не раньше code_ttl_minutes назад.
+     */
+    private function emailCodeFresh(int $userId): bool
+    {
+        $sentAt = $this->userRow($userId)->code_sent_at;
+        if (empty($sentAt)) {
+            return false;
+        }
+
+        return time() - strtotime((string) $sentAt) <= (int) config('user.two_factor.code_ttl_minutes', 5) * 60;
     }
 
     private function invalidateUserSecret(int $userId): void

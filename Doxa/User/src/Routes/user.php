@@ -137,4 +137,5 @@ Route::group([
     Route::post('/api/two-factor/email-change/confirm-2fa', [$twoFactor, 'confirmEmailChangeTwoFactor'])->name('auth.api.two_factor.email_change_2fa');
     Route::post('/api/two-factor/email-change/request-new', [$twoFactor, 'requestEmailChangeNew'])->name('auth.api.two_factor.email_change_request');
     Route::post('/api/two-factor/email-change/confirm-new', [$twoFactor, 'confirmEmailChangeNew'])->name('auth.api.two_factor.email_change_confirm');
+    Route::post('/api/two-factor/action/start', [$twoFactor, 'startActionConfirm'])->name('auth.api.two_factor.action_start');
 });

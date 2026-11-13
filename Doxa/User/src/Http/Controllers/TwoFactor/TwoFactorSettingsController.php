@@ -232,6 +232,20 @@ class TwoFactorSettingsController extends Controller
     }
 
     /**
+     * Начинает подтверждение важного действия кодом 2FA: отдаёт канал (totp | email) и маску почты;
+     * для почты код уже отправлен. Код проверяет сам хост в запросе действия (TwoFactorService::confirmAction).
+     */
+    public function startActionConfirm(): JsonResponse
+    {
+        $result = $this->twoFactor->startActionConfirm($this->userId());
+        if (is_string($result)) {
+            return $this->fail($result);
+        }
+
+        return response()->json(['success' => true, ...$result]);
+    }
+
+    /**
      * Создаёт или меняет пароль.
      */
     public function changePassword(): JsonResponse
