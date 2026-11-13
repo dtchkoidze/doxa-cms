@@ -32,6 +32,8 @@ return [
     'redirect_uri_patterns' => [
         '#^https://chatgpt\.com/connector/oauth/[A-Za-z0-9_-]+$#',
         '#^https://chatgpt\.com/connector_platform_oauth_redirect$#',
+        // Gemini (Google Connected Apps): oauth-redirect[-sandbox|-test].googleusercontent.com/r/* и /a/*
+        '#^https://oauth-redirect(-sandbox|-test)?\.googleusercontent\.com/[ra]/[A-Za-z0-9._-]+$#',
     ],
 
     /** Единственный scope токена. */
