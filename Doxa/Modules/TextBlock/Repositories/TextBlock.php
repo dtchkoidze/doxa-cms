@@ -21,24 +21,32 @@ class TextBlock extends Repository
         }
     }
 
+    /**
+     * Возвращает text blocks по префиксу ключа: title/description из text (разделитель //).
+     * Разбор строки в PHP — одинаково для MySQL и PostgreSQL.
+     *
+     * @param string $prefix префикс ключа text_blocks.key
+     * @return array<int, object{title: string, description: string}>
+     */
     public function getItemsStartingWith(string $prefix)
     {
+        $rows = DB::table('text_block_variations as tbv')
+            ->join('text_blocks as tb', 'tbv.src_id', '=', 'tb.id')
+            ->where('tbv.locale_id', Chlo::getCurrentLocaleId())
+            ->where('tb.key', 'like', $prefix . '%')
+            ->get(['tbv.text']);
 
+        $items = [];
+        foreach ($rows as $row) {
+            $text = (string) $row->text;
+            // как MySQL SUBSTRING_INDEX(..., '//', 1) и SUBSTRING_INDEX(..., '//', -1)
+            $parts = explode('//', $text);
+            $items[] = (object) [
+                'title' => $parts[0],
+                'description' => $parts[count($parts) - 1],
+            ];
+        }
 
-
-
-        $items = DB::select("
-    SELECT 
-        SUBSTRING_INDEX(tbv.text, '//', 1) AS title,
-        SUBSTRING_INDEX(tbv.text, '//', -1) AS description
-    FROM text_block_variations AS tbv
-    JOIN text_blocks AS tb ON tbv.src_id = tb.id
-    WHERE tbv.locale_id = :locale_id
-    AND tb.key LIKE CONCAT(:prefix, '%')
-", ['locale_id' => Chlo::getCurrentLocaleId(),  'prefix' => $prefix]);
-
-
-        // dd($items);
         return $items;
     }
 }

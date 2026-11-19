@@ -115,7 +115,7 @@ class Where
         // -------- VALUE
         $this->value = $this->resolveWhereVal($this->_value);
 
-        $this->request_string = "`" . $this->key . "` " . $this->operand . " " . $this->value;
+        $this->request_string = $this->quoteIdentifier($this->key) . ' ' . $this->operand . ' ' . (string) $this->value;
 
         //dump('$this->request_string: '.$this->request_string);
     }
@@ -170,10 +170,10 @@ class Where
     }
 
     /**
-     * Returns WHERE value with correct type
+     * Возвращает значение для WHERE (число или строковый литерал / LIKE / IN).
      *
-     * @param mixed $val
-     * @return mixedt
+     * @param mixed $val исходное значение
+     * @return string|int|float
      */
     private function resolveWhereVal($val)
     {
@@ -216,6 +216,21 @@ class Where
     public function getByTable()
     {
         return $this->by_table;
+    }
+
+    /**
+     * Кавычки идентификатора под текущий драйвер БД.
+     *
+     * @param string $key имя колонки
+     * @return string
+     */
+    private function quoteIdentifier(string $key): string
+    {
+        if (config('database.default') === 'pgsql') {
+            return '"' . str_replace('"', '""', $key) . '"';
+        }
+
+        return '`' . str_replace('`', '``', $key) . '`';
     }
 
 }

@@ -40,11 +40,11 @@ class Builder
     public function createSelectBuild()
     {
         foreach($this->config->scheme->getTableFieldsList() as $key => $params){
-            $this->select_build[] = $this->config->table . "." . $key . " as '" . 'b__' . $key . "'";
+            $this->select_build[] = $this->config->table . '.' . $key . ' as b__' . $key;
         }
         if($this->config->variations_table){
             foreach($this->config->scheme->getVariationsTableFieldsList() as $key => $params){
-                $this->select_build[] = $this->config->variations_table . "." . $key . " as '" . 'v__'.$key . "'";
+                $this->select_build[] = $this->config->variations_table . '.' . $key . ' as v__' . $key;
             }
         }
     }
