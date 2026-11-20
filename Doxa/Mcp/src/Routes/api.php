@@ -21,14 +21,14 @@ Route::middleware([EnsureMcpHost::class])->group(function () {
     Route::post('/oauth/register', [RegisterController::class, 'register'])->middleware('throttle:20,1');
     Route::post('/oauth/token', [TokenController::class, 'token'])->middleware('throttle:60,1');
 
-    $path = '/' . config('doxa_mcp.path');
+    $path = '/' . config('doxa_mcp.path') . '/{mcpProduct}';
     Route::post($path, [McpController::class, 'handle'])->middleware([
         AuthenticateMcpToken::class,
         'throttle:doxa_mcp',
         LogMcpCall::class,
         ReorderJsonAccept::class,
         ValidateMcpHeaders::class,
-    ]);
-    Route::get($path, [McpController::class, 'methodNotAllowed']);
-    Route::delete($path, [McpController::class, 'methodNotAllowed']);
+    ])->where('mcpProduct', '[a-z0-9_-]+');
+    Route::get($path, [McpController::class, 'methodNotAllowed'])->where('mcpProduct', '[a-z0-9_-]+');
+    Route::delete($path, [McpController::class, 'methodNotAllowed'])->where('mcpProduct', '[a-z0-9_-]+');
 });

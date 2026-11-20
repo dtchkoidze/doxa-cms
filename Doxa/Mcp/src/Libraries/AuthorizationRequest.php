@@ -142,8 +142,8 @@ class AuthorizationRequest
         $this->scope = $scope;
 
         $this->resource = $this->stringInput('resource');
-        if ($this->resource !== null && rtrim($this->resource, '/') !== $this->host->resourceUrl()) {
-            return $this->deny('invalid_target', 'resource must be ' . $this->host->resourceUrl());
+        if ($this->resource !== null && !$this->host->isValidResource($this->resource)) {
+            return $this->deny('invalid_target', 'resource is not a MCP URL of this host');
         }
 
         return true;

@@ -1,7 +1,8 @@
 <?php
 
 /**
- * MCP-сервер для ChatGPT и других MCP-клиентов: OAuth 2.1 (PKCE, refresh, регистрация клиента), адрес /mcp, журнал вызовов.
+ * MCP-сервер для ChatGPT и других MCP-клиентов: OAuth 2.1 (PKCE, refresh, регистрация клиента),
+ * адреса /mcp/{ключ}, журнал вызовов.
  * Проект включает модуль и задаёт серверы своим config/doxa_mcp.php.
  * Продукт хоста — Registration::authSessionContext(), как у user_auth_sessions; токен действует только на своём продукте.
  * Таблицы — Doxa/Mcp/docs/sql/mcp.sql (вручную, migrate не используется).
@@ -11,18 +12,19 @@ return [
     'enabled' => false,
 
     /**
-     * Код продукта хоста => класс сервера (наследник Laravel\Mcp\Server).
-     * Хост без сервера в списке — 404 на /mcp, OAuth и служебных адресах.
+     * Код продукта хоста => [ключ пути MCP => класс сервера (наследник Laravel\Mcp\Server)].
+     * Пример: 'servicer' => ['servicer' => ServicerMcpServer::class, 'scheduler' => SchedulerMcpServer::class].
+     * Хост без записи — 404 на /mcp/{ключ}, OAuth и служебных адресах. Голого /mcp нет.
      */
     'servers' => [],
 
     /**
-     * Middleware OAuth API и /mcp до проверки токена: маршруты вне группы web (без сессии и CSRF),
+     * Middleware OAuth API и /mcp/{ключ} до проверки токена: маршруты вне группы web (без сессии и CSRF),
      * сюда проект кладёт то, что поднимает продукт хоста.
      */
     'middleware' => [],
 
-    /** Путь MCP-сервера от корня хоста. */
+    /** Префикс MCP-серверов от корня хоста; полный путь — /{path}/{ключ}. */
     'path' => 'mcp',
 
     /** Страница входа; {return} — адрес страницы подтверждения доступа (rawurlencode). */

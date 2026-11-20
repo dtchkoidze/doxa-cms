@@ -8,7 +8,7 @@ use Laravel\Mcp\Server\Transport\HttpTransport;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Адрес /mcp: сообщение JSON-RPC передаётся серверу продукта хоста (doxa_mcp.servers).
+ * Адрес /mcp/{ключ}: сообщение JSON-RPC передаётся серверу этого ключа на хосте (doxa_mcp.servers).
  */
 class McpController
 {
@@ -22,6 +22,10 @@ class McpController
     public function handle(): Response|StreamedResponse
     {
         $serverClass = $this->host->serverClass();
+        if ($serverClass === null) {
+            abort(404);
+        }
+
         $transport = new HttpTransport(request());
         $server = new $serverClass($transport);
         $server->start();

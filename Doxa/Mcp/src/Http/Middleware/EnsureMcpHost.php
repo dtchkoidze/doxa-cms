@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Пропускает запросы OAuth и /mcp только на хосте, продукту которого задан MCP-сервер (doxa_mcp.servers); иначе 404.
+ * Пропускает OAuth и /mcp/{ключ} только на хосте с заданными MCP-серверами; неизвестный ключ пути — 404.
  */
 class EnsureMcpHost
 {
@@ -21,7 +21,12 @@ class EnsureMcpHost
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($this->host->serverClass() === null) {
+        if (!$this->host->hasServers()) {
+            abort(404);
+        }
+
+        $mcpKey = $this->host->mcpKey();
+        if ($mcpKey !== null && $this->host->serverClass() === null) {
             abort(404);
         }
 

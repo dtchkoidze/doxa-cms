@@ -49,8 +49,8 @@ class OAuthTokens
             return new TokenGrant(error: 'invalid_grant', errorDescription: 'code_verifier does not match code_challenge');
         }
         $resource = $this->stringInput($input, 'resource');
-        if ($resource !== null && rtrim($resource, '/') !== $this->host->resourceUrl()) {
-            return new TokenGrant(error: 'invalid_target', errorDescription: 'resource must be ' . $this->host->resourceUrl());
+        if ($resource !== null && !$this->host->isValidResource($resource)) {
+            return new TokenGrant(error: 'invalid_target', errorDescription: 'resource is not a MCP URL of this host');
         }
         if ($this->users->findActive((int) $row->user_id) === null) {
             return new TokenGrant(error: 'invalid_grant', errorDescription: 'user is not active');

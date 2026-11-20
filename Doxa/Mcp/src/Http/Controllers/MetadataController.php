@@ -15,10 +15,14 @@ class MetadataController
     ) {}
 
     /**
-     * Отдаёт документ защищённого ресурса: адрес /mcp и сервер авторизации.
+     * Отдаёт документ защищённого ресурса: адрес /mcp/{ключ} и сервер авторизации.
      */
     public function protectedResource(): JsonResponse
     {
+        if ($this->host->mcpKey() === null || $this->host->serverClass() === null) {
+            abort(404);
+        }
+
         return response()->json([
             'resource' => $this->host->resourceUrl(),
             'authorization_servers' => [$this->host->issuer()],
